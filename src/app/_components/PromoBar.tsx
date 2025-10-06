@@ -22,8 +22,8 @@ export default function PromoBar() {
     }, []);
 
     return (
-        <div className="bg-black text-white text-center text-[11px] sm:text-xs py-2 px-3">
-            <div className="mx-auto max-w-6xl flex items-center justify-center gap-3">
+        <div className="bg-black text-white text-center text-xs sm:text-sm py-3 px-3">
+            <div className="w-full flex items-center justify-center gap-3">
                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/70" />
                 <div className="relative h-5 overflow-hidden" aria-live="polite">
                     <div key={index} className="animate-[fadeSlide_400ms_ease] whitespace-nowrap">

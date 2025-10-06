@@ -1,7 +1,7 @@
 export default function Footer() {
 	return (
 		<footer className="border-t mt-10">
-			<div className="max-w-6xl mx-auto px-4 py-10 grid grid-cols-1 sm:grid-cols-3 gap-8 text-sm text-gray-700">
+			<div className="w-full px-4 py-10 grid grid-cols-1 sm:grid-cols-3 gap-8 text-sm text-gray-700">
 				<div>
 					<div className="font-semibold mb-3">Shop</div>
 					<ul className="space-y-2">
@@ -31,7 +31,7 @@ export default function Footer() {
 				</div>
 			</div>
 			<div className="border-t">
-				<div className="max-w-6xl mx-auto px-4 py-6 text-xs text-gray-500">© 2025 JapanHaul Clone</div>
+				<div className="w-full px-4 py-6 text-xs text-gray-500">© 2025 JapanHaul Clone</div>
 			</div>
 		</footer>
 	);

@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function Header({ lang }: { lang: "en" | "ja" }) {
     return (
         <div className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b">
-            <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-4">
+            <div className="w-full px-4 py-3 flex items-center gap-4">
                 {/* Logo */}
                 <Link href={`/${lang}`} className="flex items-center gap-2">
                     <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-black text-white text-sm font-semibold">JH</span>
