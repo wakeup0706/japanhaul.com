@@ -74,7 +74,7 @@ export default async function LocalizedHome({ params }: { params: Promise<{ lang
                         <div className="mt-2 text-sm leading-tight">
                             <div className="font-bold group-hover:underline">Product {i + 1}</div>
                             <div className="mt-0.5 text-[13px]">
-                                <span className="font-semibold text-rose-600">${((i + 1) * 3).toFixed(2)} USD</span>
+                                <span className="font-semibold text-black">${((i + 1) * 3).toFixed(2)} USD</span>
                             </div>
                         </div>
                     </Link>

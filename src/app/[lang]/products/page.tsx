@@ -270,7 +270,7 @@ export default function ProductsPage({ params }: { params: Promise<{ lang: strin
                                     <button
                                         type="button"
                                         onClick={(e) => { e.preventDefault(); setQuickView(p); }}
-                                        className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-white opacity-0 group-hover:opacity-100 transition"
+                                        className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-white opacity-0 group-hover:opacity-100 transition"
                                         aria-label="Quick view"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M21.75 12c0-1.6-3.9-6.75-9.75-6.75S2.25 10.4 2.25 12c0 1.6 3.9 6.75 9.75 6.75S21.75 13.6 21.75 12Zm-6.5 0a3.25 3.25 0 1 1-6.5 0 3.25 3.25 0 0 1 6.5 0Z" clipRule="evenodd"/></svg>
@@ -292,15 +292,15 @@ export default function ProductsPage({ params }: { params: Promise<{ lang: strin
                                         alt={`${p.title} alt`}
                                         width={600}
                                         height={450}
-                                        className="absolute inset-0 h-full w-full object-cover object-center opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100"
+                                        className="absolute inset-0 h-full w-full object-cover object-center opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100 pointer-events-none"
                                     />
                                 </div>
                                 <div className="mt-2 text-sm leading-tight">
                                     <div className="font-medium group-hover:underline">{p.title}</div>
                                     <div className="mt-0.5 flex items-center gap-2">
-                                        <span className="font-semibold text-rose-600">${p.price.toFixed(2)} USD</span>
+                                        <span className={`${p.compareAt ? "text-rose-600 font-semibold" : "text-black font-semibold"}`}>${p.price.toFixed(2)} USD</span>
                                         {p.compareAt && (
-                                            <span className="text-xs text-gray-500 line-through">${p.compareAt.toFixed(2)} USD</span>
+                                            <span className="text-xs text-black line-through">${p.compareAt.toFixed(2)} USD</span>
                                         )}
                                     </div>
                                 </div>

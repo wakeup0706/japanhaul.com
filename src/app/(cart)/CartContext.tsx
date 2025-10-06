@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useMemo, useReducer } from "react";
 
-export type CartItem = { id: string; title: string; price: number; quantity: number };
+export type CartItem = { id: string; title: string; price: number; quantity: number; image?: string };
 
 type CartState = { items: CartItem[] };
 
@@ -45,9 +45,20 @@ const CartContext = createContext<{
 } | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-	const [state, dispatch] = useReducer(reducer, { items: [] });
+    const [state, dispatch] = useReducer(reducer, undefined, () => {
+        if (typeof window !== "undefined") {
+            try {
+                const raw = window.localStorage.getItem("cart:v1");
+                if (raw) return JSON.parse(raw) as CartState;
+            } catch {}
+        }
+        return { items: [] } as CartState;
+    });
 	const subtotal = useMemo(() => state.items.reduce((s, i) => s + i.price * i.quantity, 0), [state.items]);
-	return <CartContext.Provider value={{ state, dispatch, subtotal }}>{children}</CartContext.Provider>;
+    if (typeof window !== "undefined") {
+        try { window.localStorage.setItem("cart:v1", JSON.stringify(state)); } catch {}
+    }
+    return <CartContext.Provider value={{ state, dispatch, subtotal }}>{children}</CartContext.Provider>;
 }
 
 export function useCart() {
