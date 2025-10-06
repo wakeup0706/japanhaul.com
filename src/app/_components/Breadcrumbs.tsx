@@ -1,0 +1,65 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useMemo } from "react";
+
+function toTitle(slug: string): string {
+    if (!slug) return "";
+    return slug
+        .replace(/[-_]+/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+export default function Breadcrumbs() {
+    const pathname = usePathname();
+    // pathname like "/en/products/p1" -> segments after lang
+    const segments = useMemo(() => {
+        const parts = (pathname || "/").split("/").filter(Boolean);
+        if (parts.length === 0) return [] as string[];
+        // drop language segment if present (en/ja)
+        const rest = parts.slice(1);
+        return rest;
+    }, [pathname]);
+
+    if (segments.length === 0) return null;
+
+    // Build items for JSON-LD and links
+    const crumbs = [{ label: "Home", href: `/${(pathname || "/").split("/").filter(Boolean)[0]}` }];
+    let href = crumbs[0].href;
+    segments.forEach((seg) => {
+        href += `/${seg}`;
+        crumbs.push({ label: toTitle(seg), href });
+    });
+
+    const jsonLd = {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: crumbs.map((c, i) => ({
+            "@type": "ListItem",
+            position: i + 1,
+            name: c.label,
+            item: c.href,
+        })),
+    };
+
+    return (
+        <div className="w-full px-6 lg:px-10 py-2 text-sm text-gray-600">
+            <nav aria-label="Breadcrumb" className="flex items-center gap-2 flex-wrap">
+                {crumbs.map((c, i) => (
+                    <span key={c.href} className="flex items-center gap-2">
+                        {i > 0 && <span className="text-gray-400">→</span>}
+                        {i < crumbs.length - 1 ? (
+                            <Link href={c.href} className="hover:underline">{c.label}</Link>
+                        ) : (
+                            <span className="text-gray-900">{c.label}</span>
+                        )}
+                    </span>
+                ))}
+            </nav>
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+        </div>
+    );
+}
+
+

@@ -108,7 +108,8 @@ export default function ProductsPage({ params }: { params: Promise<{ lang: strin
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                 {/* Sidebar filters */}
-                <aside className="lg:col-span-3 space-y-6 text-[15px]">
+                <aside className="lg:col-span-3">
+                    <div className="sticky top-28 lg:top-32 max-h-[calc(100vh-9rem)] overflow-auto pr-2 space-y-6 text-[15px]">
                     {/* Availability */}
                     <div>
                         <div className="flex items-center justify-between">
@@ -211,6 +212,7 @@ export default function ProductsPage({ params }: { params: Promise<{ lang: strin
                                 <span>Out of stock</span>
                             </label>
                         </div>
+                    </div>
                     </div>
                 </aside>
 

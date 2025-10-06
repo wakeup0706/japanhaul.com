@@ -5,6 +5,7 @@ import PromoBar from "@/app/_components/PromoBar";
 import Header from "@/app/_components/Header";
 import CategoryBar from "@/app/_components/CategoryBar";
 import Footer from "@/app/_components/Footer";
+import Breadcrumbs from "@/app/_components/Breadcrumbs";
 
 export default async function LangLayout({
 	children,
@@ -22,6 +23,7 @@ export default async function LangLayout({
 				<PromoBar />
 				<Header lang={lang} />
 				<CategoryBar lang={lang} />
+				<Breadcrumbs />
 				<main className="flex-1">
 					{children}
 				</main>
