@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local helper docs (ignored)
+DEV_PUSH_GUIDE.md
