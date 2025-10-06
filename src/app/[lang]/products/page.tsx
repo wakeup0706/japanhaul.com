@@ -2,41 +2,11 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { products as allProducts, brands, types, Product } from "@/app/_data/products";
 import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-type Product = {
-    id: string;
-    title: string;
-    price: number;
-    compareAt?: number; // original price for discount display
-    brand: string;
-    type: string;
-    availability: "in" | "out";
-};
-
-const brands = ["Adele", "Apex heart", "Disney", "Calbee", "Bloom"] as const;
-const types = [
-    "Anime Snacks",
-    "Chocolate",
-    "Mochi",
-    "Kitchenware",
-    "Candy, Gummy & Jelly",
-] as const;
-
-const mockProducts: Product[] = Array.from({ length: 48 }).map((_, i) => {
-    const base = (i + 1) * 3;
-    const onSale = i % 3 === 0;
-    return {
-	id: `p${i + 1}`,
-	title: `Product ${i + 1}`,
-        price: onSale ? Math.round(base * 0.7 * 100) / 100 : base,
-        compareAt: onSale ? base : undefined,
-        brand: brands[i % brands.length],
-        type: types[i % types.length],
-        availability: i % 7 === 0 ? "out" : "in",
-    };
-});
+const mockProducts: Product[] = allProducts;
 
 export default function ProductsPage({ params }: { params: Promise<{ lang: string }> }) {
     // Resolve lang param (server-provided in app router)
@@ -99,9 +69,11 @@ export default function ProductsPage({ params }: { params: Promise<{ lang: strin
     const selectedAvailability = new Set(getMulti("avail"));
     const selectedBrands = new Set(getMulti("brand"));
     const selectedTypes = new Set(getMulti("type"));
+    const query = (searchParams.get("q") || "").toLowerCase();
 
     const filtered = useMemo(() => {
         const base = mockProducts.filter((p) => {
+            if (query && !p.title.toLowerCase().includes(query)) return false;
             if (p.price < priceMin || p.price > priceMax) return false;
             if (selectedAvailability.size > 0 && !selectedAvailability.has(p.availability)) return false;
             if (selectedBrands.size > 0 && !selectedBrands.has(p.brand)) return false;
@@ -321,9 +293,9 @@ export default function ProductsPage({ params }: { params: Promise<{ lang: strin
                                         className="absolute inset-0 h-full w-full object-cover object-center opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100"
                                     />
                                 </div>
-                                <div className="mt-2 text-sm">
-                                    <div className="font-medium">{p.title}</div>
-                                    <div className="flex items-center gap-2">
+                                <div className="mt-2 text-sm leading-tight">
+                                    <div className="font-medium group-hover:underline">{p.title}</div>
+                                    <div className="mt-0.5 flex items-center gap-2">
                                         <span className="font-semibold text-rose-600">${p.price.toFixed(2)} USD</span>
                                         {p.compareAt && (
                                             <span className="text-xs text-gray-500 line-through">${p.compareAt.toFixed(2)} USD</span>

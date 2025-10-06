@@ -11,7 +11,7 @@ const categories = [
 
 export default function CategoryBar({ lang }: { lang: "en" | "ja" }) {
     return (
-        <div className="bg-white border-b">
+        <div className="bg-white border-b sticky top-[56px] z-30">
             <div className="w-full px-4 py-2 overflow-x-auto">
                 <ul className="flex gap-3 sm:gap-4 text-sm whitespace-nowrap">
                     {categories.map((c) => (

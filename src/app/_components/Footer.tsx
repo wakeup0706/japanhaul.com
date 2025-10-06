@@ -1,10 +1,10 @@
 export default function Footer() {
-	return (
-		<footer className="border-t mt-10">
-			<div className="w-full px-4 py-10 grid grid-cols-1 sm:grid-cols-3 gap-8 text-sm text-gray-700">
+    return (
+        <footer className="mt-10 bg-black text-white">
+            <div className="w-full px-6 lg:px-10 py-12 grid grid-cols-1 sm:grid-cols-3 gap-8 text-base">
 				<div>
-					<div className="font-semibold mb-3">Shop</div>
-					<ul className="space-y-2">
+                    <div className="font-semibold mb-3 text-lg">Shop</div>
+                    <ul className="space-y-2 pl-2 sm:pl-4">
 						<li>Trending</li>
 						<li>New arrivals</li>
 						<li>On sale</li>
@@ -12,7 +12,7 @@ export default function Footer() {
 					</ul>
 				</div>
 				<div>
-					<div className="font-semibold mb-3">Customer care</div>
+                    <div className="font-semibold mb-3 text-lg">Customer care</div>
 					<ul className="space-y-2">
 						<li>My account</li>
 						<li>Contact</li>
@@ -21,7 +21,7 @@ export default function Footer() {
 					</ul>
 				</div>
 				<div>
-					<div className="font-semibold mb-3">About</div>
+                    <div className="font-semibold mb-3 text-lg">About</div>
 					<ul className="space-y-2">
 						<li>About us</li>
 						<li>Careers</li>
@@ -30,8 +30,8 @@ export default function Footer() {
 					</ul>
 				</div>
 			</div>
-			<div className="border-t">
-				<div className="w-full px-4 py-6 text-xs text-gray-500">© 2025 JapanHaul Clone</div>
+            <div className="border-t border-white/10">
+                <div className="w-full px-6 lg:px-10 py-6 text-xs text-white/70">© 2025 JapanHaul Clone</div>
 			</div>
 		</footer>
 	);
