@@ -16,7 +16,17 @@ export default function Header({ lang }: { lang: "en" | "ja" }) {
     const cart = useCart();
     const itemCount = cart?.state.items.reduce((s, i) => s + i.quantity, 0) ?? 0;
     const [mounted, setMounted] = useState(false);
-    useEffect(() => { setMounted(true); }, []);
+    useEffect(() => {
+        setMounted(true);
+        const onOpen = () => setCartOpen(true);
+        const handler: EventListener = () => onOpen();
+        window.addEventListener("cart:open", handler);
+        document.addEventListener("cart:open", handler);
+        return () => {
+            window.removeEventListener("cart:open", handler);
+            document.removeEventListener("cart:open", handler);
+        };
+    }, []);
 	return (
 		<div className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b">
             <div className="w-full px-4 py-3 flex items-center gap-4">

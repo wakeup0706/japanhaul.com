@@ -65,7 +65,7 @@ export default function ProductDetail({ params }: { params: Promise<{ lang: stri
                                 <span className="px-3 min-w-[2rem] text-center">{qty}</span>
                                 <button className="h-6 w-6 inline-flex items-center justify-center rounded-full hover:bg-gray-100" onClick={() => setQty(qty+1)}>+</button>
                             </div>
-                            <AddToCartButton id={product.id} title={product.title} price={product.price} label={t.add} image="/placeholder.jpg" />
+                            <AddToCartButton id={product.id} title={product.title} price={product.price} label={t.add} image="/placeholder.jpg" quantity={qty} />
                         </div>
                         {/* badges moved under images */}
                         <hr className="my-6" />
