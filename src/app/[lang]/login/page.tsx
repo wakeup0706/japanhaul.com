@@ -1,5 +1,6 @@
 "use client";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 
 export default function LoginPage() {
     const { lang: rawLang } = useParams<{ lang: string }>();
@@ -12,7 +13,7 @@ export default function LoginPage() {
     return (
         <section className="max-w-sm mx-auto px-4 py-14">
             <h1 className="text-2xl font-semibold mb-6">{t.title}</h1>
-            <a href="/api/auth/login" className="w-full inline-flex items-center justify-center gap-3 rounded border px-5 py-3 text-base font-medium mb-4 hover:bg-gray-50 transition-colors">
+            <Link href="/api/auth/login" className="w-full inline-flex items-center justify-center gap-3 rounded border px-5 py-3 text-base font-medium mb-4 hover:bg-gray-50 transition-colors">
                 {/* Polished Google icon in a circular badge */}
                 <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white ring-1 ring-gray-200 shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="h-4 w-4" aria-hidden>
@@ -23,15 +24,15 @@ export default function LoginPage() {
                     </svg>
                 </span>
                 {t.google}
-            </a>
+            </Link>
             <form className="space-y-4">
                 <input className="border rounded p-3 w-full text-base" placeholder={t.email} />
                 <input type="password" className="border rounded p-3 w-full text-base" placeholder={t.password} />
                 <button className="w-full bg-black text-white px-5 py-3 rounded text-base font-medium">{t.submit}</button>
             </form>
             <div className="mt-6 flex items-center justify-between text-base">
-                <a href={`/${lang}/register`} className="underline hover:no-underline">{t.create}</a>
-                <a href={`/${lang}/forgot-password`} className="underline hover:no-underline">{t.forgot}</a>
+                <Link href={`/${lang}/register`} className="underline hover:no-underline">{t.create}</Link>
+                <Link href={`/${lang}/forgot-password`} className="underline hover:no-underline">{t.forgot}</Link>
             </div>
         </section>
     );

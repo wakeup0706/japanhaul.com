@@ -33,7 +33,7 @@ export default function Breadcrumbs() {
     segments.forEach((seg) => {
         href += `/${seg}`;
         // Use raw() to check if key exists, fallback to title case for unknown segments
-        const rawT = t.raw(`routes.${seg}` as any);
+        const rawT = t.raw(`routes.${seg}`);
         const label = typeof rawT === 'string' ? rawT : toTitle(seg);
         crumbs.push({ label, href });
     });

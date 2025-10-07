@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default async function RegisterPage({ params }: { params: Promise<{ lang: string }> }) {
     const { lang: rawLang } = await params;
 	const lang = rawLang === "ja" ? "ja" : "en";
@@ -9,7 +11,7 @@ export default async function RegisterPage({ params }: { params: Promise<{ lang:
     return (
         <section className="max-w-sm mx-auto px-4 py-14">
             <h1 className="text-2xl font-semibold mb-6">{t.title}</h1>
-            <a href="/api/auth/login?screen_hint=signup" className="w-full inline-flex items-center justify-center gap-3 rounded border px-5 py-3 text-base font-medium mb-4 hover:bg-gray-50 transition-colors">
+            <Link href="/api/auth/login?screen_hint=signup" className="w-full inline-flex items-center justify-center gap-3 rounded border px-5 py-3 text-base font-medium mb-4 hover:bg-gray-50 transition-colors">
                 <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white ring-1 ring-gray-200 shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="h-4 w-4" aria-hidden>
                         <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.778 32.659 29.273 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.957 3.043l5.657-5.657C34.943 6.053 29.743 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20c10.493 0 19.128-7.652 19.128-20 0-1.341-.138-2.651-.517-3.917z"/>
@@ -19,15 +21,15 @@ export default async function RegisterPage({ params }: { params: Promise<{ lang:
                     </svg>
                 </span>
                 {t.google}
-            </a>
+            </Link>
             <form className="space-y-4">
                 <input className="border rounded p-3 w-full text-base" placeholder={t.name} />
                 <input className="border rounded p-3 w-full text-base" placeholder={t.email} />
                 <input type="password" className="border rounded p-3 w-full text-base" placeholder={t.password} />
-                <a href="/api/auth/login?screen_hint=signup" className="w-full inline-flex items-center justify-center bg-black text-white px-5 py-3 rounded text-base font-medium">{t.submit}</a>
+                <Link href="/api/auth/login?screen_hint=signup" className="w-full inline-flex items-center justify-center bg-black text-white px-5 py-3 rounded text-base font-medium">{t.submit}</Link>
             </form>
             <div className="mt-6 text-center text-base">
-                <a href={`/${lang}/login`} className="inline-block underline hover:no-underline">{t.signin}</a>
+                <Link href={`/${lang}/login`} className="inline-block underline hover:no-underline">{t.signin}</Link>
             </div>
         </section>
     );
