@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
 import Portal from "@/app/_components/Portal";
 import { products } from "@/app/_data/products";
 import CartDrawer from "@/app/_components/CartDrawer";
@@ -13,6 +14,7 @@ export default function Header({ lang }: { lang: "en" | "ja" }) {
     const [open, setOpen] = useState(false);
     const [cartOpen, setCartOpen] = useState(false);
     const [query, setQuery] = useState("");
+    const pathname = usePathname();
     const cart = useCart();
     const itemCount = cart?.state.items.reduce((s, i) => s + i.quantity, 0) ?? 0;
     const [mounted, setMounted] = useState(false);
@@ -38,6 +40,24 @@ export default function Header({ lang }: { lang: "en" | "ja" }) {
                 <div className="flex-1" />
                 {/* Actions */}
                 <nav className="flex items-center gap-3 text-sm">
+                    {/* Language toggle */}
+                    {pathname && (
+                        <Link
+                            href={(() => {
+                                const segments = pathname.split("/");
+                                const current = segments[1] === "ja" ? "ja" : "en";
+                                const other = current === "ja" ? "en" : "ja";
+                                segments[1] = other;
+                                const next = segments.join("/") || "/";
+                                return next;
+                            })()}
+                            className="rounded-full px-3 py-1 border hover:bg-gray-100 inline-flex items-center gap-1"
+                            aria-label={lang === "ja" ? "Switch to English" : "日本語に切り替え"}
+                        >
+                            <span aria-hidden className="text-lg">{lang === "ja" ? "A" : "あ"}</span>
+                            <span className="hidden sm:inline">{lang === "ja" ? "EN" : "日本語"}</span>
+                        </Link>
+                    )}
                     {/* Search icon opens drawer */}
                     <button type="button" aria-label="Search" onClick={() => setOpen(true)} className="rounded-full p-2 hover:bg-gray-100">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6"><path fillRule="evenodd" d="M10.5 3.75a6.75 6.75 0 1 0 4.21 12.02l3.76 3.76a.75.75 0 1 0 1.06-1.06l-3.76-3.76A6.75 6.75 0 0 0 10.5 3.75Zm-5.25 6.75a5.25 5.25 0 1 1 10.5 0 5.25 5.25 0 0 1-10.5 0Z" clipRule="evenodd"/></svg>
@@ -62,7 +82,7 @@ export default function Header({ lang }: { lang: "en" | "ja" }) {
                     <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
                     <aside className="absolute right-0 top-0 h-full w-full sm:w-[520px] bg-white shadow-2xl flex flex-col">
                         <div className="flex items-center justify-between border-b px-4 py-3">
-                            <div className="text-lg font-semibold">Search</div>
+                            <div className="text-lg font-semibold">{t("search.title", { default: "Search" })}</div>
                             <button className="rounded-full p-2 hover:bg-gray-100" onClick={() => setOpen(false)} aria-label="Close">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5"><path fillRule="evenodd" d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z" clipRule="evenodd"/></svg>
                             </button>
@@ -95,6 +115,7 @@ export default function Header({ lang }: { lang: "en" | "ja" }) {
 }
 
 function SearchResults({ lang, queryState, onClose }: { lang: "en" | "ja"; queryState: [string, (v: string) => void]; onClose: () => void }) {
+    const t = useTranslations();
     const [query] = queryState;
     const q = query.trim().toLowerCase();
     const matches = q
@@ -102,9 +123,9 @@ function SearchResults({ lang, queryState, onClose }: { lang: "en" | "ja"; query
         : [];
     return (
         <div className="px-4 pb-6 text-sm text-gray-800">
-            <div className="font-medium mb-2">{q ? "Products" : "Type to search products"}</div>
+            <div className="font-medium mb-2">{q ? t("search.products") : t("search.typeToSearch")}</div>
             {q && matches.length === 0 && (
-                <div className="text-gray-500">No matches</div>
+                <div className="text-gray-500">{t("search.noMatches")}</div>
             )}
             <ul className="divide-y border rounded-md">
                 {matches.map((p) => (
@@ -114,7 +135,7 @@ function SearchResults({ lang, queryState, onClose }: { lang: "en" | "ja"; query
                             <div className="truncate font-medium">{p.title}</div>
                             <div className="text-xs text-gray-600">${p.price.toFixed(2)} USD</div>
                         </div>
-                        <Link href={`/${lang}/products/${p.id}`} className="text-blue-600 hover:underline" onClick={onClose}>View</Link>
+                        <Link href={`/${lang}/products/${p.id}`} className="text-blue-600 hover:underline" onClick={onClose}>{t("search.view")}</Link>
                     </li>
                 ))}
             </ul>

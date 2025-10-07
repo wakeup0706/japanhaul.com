@@ -30,7 +30,7 @@ export default async function LocalizedHome({ params }: { params: Promise<{ lang
                 <div className="grid grid-rows-2 gap-4">
                     <div className="relative overflow-hidden rounded-2xl border bg-indigo-100">
                         <div className="p-5">
-                            <div className="text-[10px] uppercase tracking-wide text-indigo-600">Limited Quantity</div>
+                            <div className="text-[10px] uppercase tracking-wide text-indigo-600">{t("home.limited")}</div>
                             <div className="mt-1 text-lg font-semibold">{t("home.spotlight1")}</div>
                             <Link href={`/${lang}/products`} className="mt-4 inline-block rounded-full bg-black px-4 py-1.5 text-xs font-medium text-white">
                                 {t("home.viewCollection")}
@@ -39,7 +39,7 @@ export default async function LocalizedHome({ params }: { params: Promise<{ lang
                     </div>
                     <div className="relative overflow-hidden rounded-2xl border bg-emerald-100">
                         <div className="p-5">
-                            <div className="text-[10px] uppercase tracking-wide text-emerald-700">Limited Quantity</div>
+                            <div className="text-[10px] uppercase tracking-wide text-emerald-700">{t("home.limited")}</div>
                             <div className="mt-1 text-lg font-semibold">{t("home.spotlight2")}</div>
                             <Link href={`/${lang}/products`} className="mt-4 inline-block rounded-full bg-black px-4 py-1.5 text-xs font-medium text-white">
                                 {t("home.viewCollection")}
@@ -54,12 +54,12 @@ export default async function LocalizedHome({ params }: { params: Promise<{ lang
                 {gridCards.map((i) => (
                     <Link key={i} href={`/${lang}/products/p${i + 1}`} className="group block">
                         <div className="aspect-square overflow-hidden rounded-lg border bg-white group-hover:shadow-sm transition">
-                            <Image src="/placeholder.jpg" alt={`Product ${i + 1}`} width={600} height={600} className="h-full w-full object-cover" />
+                            <Image src="/placeholder.jpg" alt={`${t("home.product")} ${i + 1}`} width={600} height={600} className="h-full w-full object-cover" />
                         </div>
                         <div className="mt-2 text-sm leading-tight">
-                            <div className="font-bold group-hover:underline">Product {i + 1}</div>
+                            <div className="font-bold group-hover:underline">{t("home.product")} {i + 1}</div>
                             <div className="mt-0.5 text-[13px]">
-                                <span className="font-semibold text-black">${((i + 1) * 3).toFixed(2)} USD</span>
+                                <span className="font-semibold text-black">{t("home.price", { value: ((i + 1) * 3).toFixed(2) })}</span>
                             </div>
                         </div>
                     </Link>

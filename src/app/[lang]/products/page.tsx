@@ -5,15 +5,35 @@ import Image from "next/image";
 import { products as allProducts, brands, types, Product } from "@/app/_data/products";
 import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 const mockProducts: Product[] = allProducts;
 
 export default function ProductsPage() {
+    const t = useTranslations();
+    const tHome = useTranslations("home");
     // Resolve lang param (server-provided in app router)
     // We don't need translations for filters UI in this demo
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
+    const lang = (pathname || "/").split("/").filter(Boolean)[0] === "ja" ? "ja" : "en";
+
+    const formatPrice = (amount: number) =>
+        new Intl.NumberFormat(lang === "ja" ? "ja-JP" : "en-US", {
+            style: "currency",
+            currency: "USD",
+            maximumFractionDigits: 2
+        }).format(amount);
+    
+    // Translate product name (Product N -> 商品 N in Japanese)
+    const translateProductName = (title: string) => {
+        const match = title.match(/^Product (\d+)$/);
+        if (match && lang === "ja") {
+            return `${tHome("product")} ${match[1]}`;
+        }
+        return title;
+    };
 
     // Helpers for URL state
     function getMulti(name: string): string[] {
@@ -104,7 +124,7 @@ export default function ProductsPage() {
         <section className="w-full px-6 lg:px-10 py-8">
             {/* Big page title */}
             <div className="w-full py-6">
-                <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-center">All items</h1>
+                <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-center">{t("products.title")}</h1>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                 {/* Sidebar filters */}
@@ -113,23 +133,23 @@ export default function ProductsPage() {
                     {/* Availability */}
                     <div>
                         <div className="flex items-center justify-between">
-                            <h2 className="text-base font-semibold">Availability</h2>
+                            <h2 className="text-base font-semibold">{t("products.filters.availability")}</h2>
                         </div>
                         <div className="mt-3 space-y-2 text-base">
                             <label className="flex items-center gap-2">
                                 <input type="checkbox" checked={selectedAvailability.has("in")} onChange={() => toggleInMulti("avail", "in")} />
-                                <span>In stock</span>
+                                <span>{t("products.filters.inStock")}</span>
                             </label>
                             <label className="flex items-center gap-2">
                                 <input type="checkbox" checked={selectedAvailability.has("out")} onChange={() => toggleInMulti("avail", "out")} />
-                                <span>Out of stock</span>
+                                <span>{t("products.filters.outOfStock")}</span>
                             </label>
                         </div>
                     </div>
 
                     {/* Price */}
                     <div>
-                        <h2 className="text-base font-semibold">Price</h2>
+                        <h2 className="text-base font-semibold">{t("products.filters.price")}</h2>
                         <div className="mt-3 flex items-center gap-3 text-base">
                             <div className="flex items-center gap-2">
                                 <span>$</span>
@@ -140,14 +160,14 @@ export default function ProductsPage() {
                                     onChange={(e) => setParam("min", e.target.value)}
                                 />
                             </div>
-                            <span className="text-gray-400">to</span>
+                            <span className="text-gray-400">{t("products.filters.to")}</span>
                             <div className="flex items-center gap-2">
                                 <span>$</span>
                                 <input
                                     type="number"
                                     className="w-20 rounded-md border px-2 py-1"
                                     value={priceMax === 9999 ? "" : priceMax}
-                                    placeholder="Max"
+                                    placeholder={t("products.filters.max")}
                                     onChange={(e) => setParam("max", e.target.value || null)}
                                 />
                             </div>
@@ -156,7 +176,7 @@ export default function ProductsPage() {
 
                     {/* Brand */}
                     <div>
-                        <h2 className="text-base font-semibold">Brand</h2>
+                        <h2 className="text-base font-semibold">{t("products.filters.brand")}</h2>
                         <div className="mt-3 max-h-56 overflow-auto pr-1 space-y-2 text-base">
                             {brands.map((b) => (
                                 <label key={b} className="flex items-center gap-2">
@@ -173,7 +193,7 @@ export default function ProductsPage() {
 
                     {/* Product type */}
                     <div>
-                        <h2 className="text-base font-semibold">Product type</h2>
+                        <h2 className="text-base font-semibold">{t("products.filters.productType")}</h2>
                         <div className="mt-3 space-y-2 text-base">
                             {types.map((t) => (
                                 <label key={t} className="flex items-center gap-2">
@@ -190,7 +210,7 @@ export default function ProductsPage() {
 
                     {/* Extra filters to match reference richness */}
                     <div>
-                        <h2 className="text-base font-semibold">Country/Region</h2>
+                        <h2 className="text-base font-semibold">{t("products.filters.region")}</h2>
                         <div className="mt-3 space-y-2 text-base">
                             {['Japan','Korea','Taiwan'].map((c) => (
                                 <label key={c} className="flex items-center gap-2 opacity-60 cursor-not-allowed">
@@ -201,15 +221,15 @@ export default function ProductsPage() {
                         </div>
                     </div>
                     <div>
-                        <h2 className="text-base font-semibold">Availability</h2>
+                        <h2 className="text-base font-semibold">{t("products.filters.availability")}</h2>
                         <div className="mt-3 space-y-2 text-base">
                             <label className="flex items-center gap-2">
                                 <input type="checkbox" checked={selectedAvailability.has("in")} onChange={() => toggleInMulti("avail", "in")} />
-                                <span>In stock</span>
+                                <span>{t("products.filters.inStock")}</span>
                             </label>
                             <label className="flex items-center gap-2">
                                 <input type="checkbox" checked={selectedAvailability.has("out")} onChange={() => toggleInMulti("avail", "out")} />
-                                <span>Out of stock</span>
+                                <span>{t("products.filters.outOfStock")}</span>
                             </label>
                         </div>
                     </div>
@@ -222,7 +242,7 @@ export default function ProductsPage() {
                     <div className="mb-3 flex flex-wrap items-center gap-2">
                         {Array.from(selectedAvailability).map((v) => (
                             <button key={`avail-${v}`} onClick={() => removeFromMulti("avail", v)} className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm ${chipClass("avail")}`}>
-                                <span>{v === "in" ? "In stock" : "Out of stock"}</span>
+                                <span>{v === "in" ? t("products.filters.inStock") : t("products.filters.outOfStock")}</span>
                                 <span className="rounded-full bg-white/60 p-0.5" aria-hidden>×</span>
                             </button>
                         ))}
@@ -245,20 +265,20 @@ export default function ProductsPage() {
                             </button>
                         )}
                     </div>
-                    <div className="mb-4 flex items-center justify-between">
-                        <div className="text-sm text-gray-600">{filtered.length} products</div>
+                        <div className="mb-4 flex items-center justify-between">
+                        <div className="text-sm text-gray-600">{t("products.count", { count: filtered.length })}</div>
                         <label className="flex items-center gap-2 text-sm">
-                            <span className="text-gray-600">Sort by:</span>
+                            <span className="text-gray-600">{t("products.sortBy")}</span>
                             <select
                                 className="rounded-md border px-2 py-1"
                                 value={sortParam}
                                 onChange={(e) => setParam("sort", e.target.value)}
                             >
-                                <option value="best">Best selling</option>
-                                <option value="alpha-asc">Alphabetically, A-Z</option>
-                                <option value="alpha-desc">Alphabetically, Z-A</option>
-                                <option value="price-asc">Price, low to high</option>
-                                <option value="price-desc">Price, high to low</option>
+                                <option value="best">{t("products.sort.best")}</option>
+                                <option value="alpha-asc">{t("products.sort.alphaAsc")}</option>
+                                <option value="alpha-desc">{t("products.sort.alphaDesc")}</option>
+                                <option value="price-asc">{t("products.sort.priceAsc")}</option>
+                                <option value="price-desc">{t("products.sort.priceDesc")}</option>
                             </select>
                         </label>
                     </div>
@@ -296,11 +316,11 @@ export default function ProductsPage() {
                                     />
                                 </div>
                                 <div className="mt-2 text-sm leading-tight">
-                                    <div className="font-medium group-hover:underline">{p.title}</div>
+                                    <div className="font-medium group-hover:underline">{translateProductName(p.title)}</div>
                                     <div className="mt-0.5 flex items-center gap-2">
-                                        <span className={`${p.compareAt ? "text-rose-600 font-semibold" : "text-black font-semibold"}`}>${p.price.toFixed(2)} USD</span>
+                                        <span className={`${p.compareAt ? "text-rose-600 font-semibold" : "text-black font-semibold"}`}>{formatPrice(p.price)}</span>
                                         {p.compareAt && (
-                                            <span className="text-xs text-black line-through">${p.compareAt.toFixed(2)} USD</span>
+                                            <span className="text-xs text-black line-through">{formatPrice(p.compareAt)}</span>
                                         )}
                                     </div>
                                 </div>
@@ -316,7 +336,7 @@ export default function ProductsPage() {
                     <div className="absolute inset-0 bg-black/50" onClick={() => setQuickView(null)} />
                     <aside className="absolute right-0 top-0 h-full w-full sm:w-[520px] bg-white shadow-2xl flex flex-col">
                         <div className="flex items-center justify-between border-b px-4 py-3">
-                            <div className="text-lg font-semibold">{quickView.title}</div>
+                            <div className="text-lg font-semibold">{translateProductName(quickView.title)}</div>
                             <button className="rounded-full p-2 hover:bg-gray-100" onClick={() => setQuickView(null)} aria-label="Close">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5"><path fillRule="evenodd" d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z" clipRule="evenodd"/></svg>
                             </button>
@@ -327,19 +347,19 @@ export default function ProductsPage() {
                             </div>
                             <div>
                                 <div className="flex items-center gap-2 text-lg">
-                                    <span className="font-semibold text-rose-600">${quickView.price.toFixed(2)} USD</span>
+                                    <span className="font-semibold text-rose-600">{formatPrice(quickView.price)}</span>
                                     {quickView.compareAt && (
-                                        <span className="text-sm text-gray-500 line-through">${quickView.compareAt.toFixed(2)} USD</span>
+                                        <span className="text-sm text-gray-500 line-through">{formatPrice(quickView.compareAt)}</span>
                                     )}
                                 </div>
-                                <div className="mt-2 text-sm text-gray-600">In stock and ready to ship.</div>
+                                <div className="mt-2 text-sm text-gray-600">{t("products.quick.inStock")}</div>
                             </div>
                             <div>
-                                <h3 className="text-sm font-semibold mb-2">About this item</h3>
-                                <p className="text-sm text-gray-700">Packed with a rotating selection of Japan-inspired goodies. This is placeholder text for the quick view drawer.</p>
+                                <h3 className="text-sm font-semibold mb-2">{t("products.quick.about")}</h3>
+                                <p className="text-sm text-gray-700">{t("products.quick.aboutText")}</p>
                             </div>
                             <div className="pt-2">
-                                <Link href={`${pathname}/${quickView.id}`} className="inline-flex items-center justify-center rounded-full bg-black px-4 py-2 text-sm font-medium text-white">View full details</Link>
+                                <Link href={`${pathname}/${quickView.id}`} className="inline-flex items-center justify-center rounded-full bg-black px-4 py-2 text-sm font-medium text-white">{t("products.quick.viewDetails")}</Link>
                             </div>
                         </div>
                     </aside>

@@ -1,3 +1,18 @@
+## Auth0 setup (Google login, password reset)
+
+Environment variables required:
+
+```
+AUTH0_SECRET=replace-with-random-32+ chars
+AUTH0_BASE_URL=https://your-site-url (http://localhost:3000 in dev)
+AUTH0_ISSUER_BASE_URL=https://YOUR_DOMAIN (e.g. https://dev-xxx.us.auth0.com)
+AUTH0_CLIENT_ID=...
+AUTH0_CLIENT_SECRET=...
+```
+
+Notes:
+- Enable the Google Social Connection in Auth0 Dashboard and link it to your app.
+- The forgot-password page redirects to `/api/auth/reset`, which forwards to Auth0’s password reset screen that emails a secret link to the user.
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

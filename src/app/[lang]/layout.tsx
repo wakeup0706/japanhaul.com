@@ -22,7 +22,7 @@ export default function LangLayout({ children }: { children: ReactNode }) {
 
     return (
         <CartProvider>
-            <NextIntlClientProvider locale={lang} messages={messages}>
+            <NextIntlClientProvider locale={lang} messages={messages} timeZone="UTC">
                 {hideChrome ? (
                     <div className="min-h-screen bg-white text-gray-900">
                         <main>{children}</main>

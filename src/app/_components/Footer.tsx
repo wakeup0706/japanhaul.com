@@ -1,38 +1,40 @@
+import {useTranslations} from "next-intl";
+
 export default function Footer() {
-    // For brevity, footer remains static English; could be moved to i18n if needed
+    const t = useTranslations("footer");
     return (
         <footer className="mt-10 bg-black text-white">
             <div className="w-full px-6 lg:px-10 py-12 grid grid-cols-1 sm:grid-cols-3 gap-8 text-base">
 				<div>
-                    <div className="font-semibold mb-3 text-lg">Shop</div>
+                    <div className="font-semibold mb-3 text-lg">{t("shop.title")}</div>
                     <ul className="space-y-2 pl-2 sm:pl-4">
-						<li>Trending</li>
-						<li>New arrivals</li>
-						<li>On sale</li>
-						<li>Collections</li>
+						<li>{t("shop.trending")}</li>
+						<li>{t("shop.newArrivals")}</li>
+						<li>{t("shop.onSale")}</li>
+						<li>{t("shop.collections")}</li>
 					</ul>
 				</div>
 				<div>
-                    <div className="font-semibold mb-3 text-lg">Customer care</div>
+                    <div className="font-semibold mb-3 text-lg">{t("care.title")}</div>
 					<ul className="space-y-2">
-						<li>My account</li>
-						<li>Contact</li>
-						<li>FAQs</li>
-						<li>Shipping & returns</li>
+						<li>{t("care.account")}</li>
+						<li>{t("care.contact")}</li>
+						<li>{t("care.faqs")}</li>
+						<li>{t("care.shippingReturns")}</li>
 					</ul>
 				</div>
 				<div>
-                    <div className="font-semibold mb-3 text-lg">About</div>
+                    <div className="font-semibold mb-3 text-lg">{t("about.title")}</div>
 					<ul className="space-y-2">
-						<li>About us</li>
-						<li>Careers</li>
-						<li>Privacy</li>
-						<li>Terms</li>
+						<li>{t("about.aboutUs")}</li>
+						<li>{t("about.careers")}</li>
+						<li>{t("about.privacy")}</li>
+						<li>{t("about.terms")}</li>
 					</ul>
 				</div>
 			</div>
             <div className="border-t border-white/10">
-                <div className="w-full px-6 lg:px-10 py-6 text-xs text-white/70">© 2025 JapanHaul Clone</div>
+                <div className="w-full px-6 lg:px-10 py-6 text-xs text-white/70">{t("copyright")}</div>
 			</div>
 		</footer>
 	);

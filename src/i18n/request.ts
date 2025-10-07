@@ -1,11 +1,14 @@
 import {getRequestConfig} from 'next-intl/server';
 import type {GetRequestConfigParams} from 'next-intl/server';
+import en from './messages/en.json';
+import ja from './messages/ja.json';
 
-export default getRequestConfig(async ({locale}: GetRequestConfigParams) => {
+export default getRequestConfig(({locale}: GetRequestConfigParams) => {
   const supported = ['en', 'ja'] as const;
   const current = typeof locale === 'string' ? locale : 'en';
   const safeLocale = (supported as readonly string[]).includes(current) ? current : 'en';
-  const messages = (await import(`./messages/${safeLocale}.json`)).default;
+  const map: Record<string, any> = { en, ja };
+  const messages = map[safeLocale] || en;
   return {locale: safeLocale, messages};
 });
 

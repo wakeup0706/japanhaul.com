@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
+import {useTranslations} from "next-intl";
 
 function toTitle(slug: string): string {
     if (!slug) return "";
@@ -12,6 +13,7 @@ function toTitle(slug: string): string {
 }
 
 export default function Breadcrumbs() {
+    const t = useTranslations("breadcrumbs");
     const pathname = usePathname();
     // pathname like "/en/products/p1" -> segments after lang
     const segments = useMemo(() => {
@@ -25,11 +27,15 @@ export default function Breadcrumbs() {
     if (segments.length === 0) return null;
 
     // Build items for JSON-LD and links
-    const crumbs = [{ label: "Home", href: `/${(pathname || "/").split("/").filter(Boolean)[0]}` }];
+    const lang = (pathname || "/").split("/").filter(Boolean)[0] || "en";
+    const crumbs = [{ label: t("home"), href: `/${lang}` }];
     let href = crumbs[0].href;
     segments.forEach((seg) => {
         href += `/${seg}`;
-        crumbs.push({ label: toTitle(seg), href });
+        // Use raw() to check if key exists, fallback to title case for unknown segments
+        const rawT = t.raw(`routes.${seg}` as any);
+        const label = typeof rawT === 'string' ? rawT : toTitle(seg);
+        crumbs.push({ label, href });
     });
 
     const jsonLd = {
