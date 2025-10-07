@@ -16,7 +16,7 @@ export default function ProductDetail({ params }: { params: Promise<{ lang: stri
 		ja: { back: "戻る", title: "商品", add: "カートに入れる", desc: "プレースホルダーの説明。" },
 	}[lang];
 
-    const product = products.find((p) => p.id === id) || { id, title: `${t.title} ${id}`, price: 44.99 };
+    const product: Product & { compareAt?: number } = products.find((p) => p.id === id) || { id, title: `${t.title} ${id}`, price: 44.99 } as Product;
 
     return (
         <section className="w-full px-6 lg:px-10 py-12 md:py-16" onScrollCapture={(e) => {
