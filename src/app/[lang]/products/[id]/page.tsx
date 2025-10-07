@@ -5,6 +5,7 @@ import Image from "next/image";
 import AddToCartButton from "./AddToCartButton";
 import { use, useState } from "react";
 import { products } from "@/app/_data/products";
+import type { Product } from "@/app/_data/products";
 
 export default function ProductDetail({ params }: { params: Promise<{ lang: string; id: string }> }) {
     const [openBar, setOpenBar] = useState(false);
@@ -16,7 +17,7 @@ export default function ProductDetail({ params }: { params: Promise<{ lang: stri
 		ja: { back: "戻る", title: "商品", add: "カートに入れる", desc: "プレースホルダーの説明。" },
 	}[lang];
 
-    const product: Product & { compareAt?: number } = products.find((p) => p.id === id) || { id, title: `${t.title} ${id}`, price: 44.99 } as Product;
+    const product: Product = products.find((p) => p.id === id) || ({ id, title: `${t.title} ${id}`, price: 44.99 } as Product);
 
     return (
         <section className="w-full px-6 lg:px-10 py-12 md:py-16" onScrollCapture={(e) => {
