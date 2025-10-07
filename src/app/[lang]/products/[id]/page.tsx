@@ -68,8 +68,8 @@ export default function ProductDetail({ params }: { params: Promise<{ lang: stri
                         </div>
                         {/* badges moved under images */}
                         <hr className="my-6" />
-                        <div className="space-y-2 text-sm">
-                            <div className="font-semibold">What's inside</div>
+                            <div className="space-y-2 text-sm">
+                                <div className="font-semibold">What&#39;s inside</div>
                             <ul className="list-disc pl-5 space-y-1">
                                 <li>A curated selection of goodies.</li>
                                 <li>Fun snack mix and surprises.</li>

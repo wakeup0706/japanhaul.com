@@ -8,7 +8,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 const mockProducts: Product[] = allProducts;
 
-export default function ProductsPage({ params }: { params: Promise<{ lang: string }> }) {
+export default function ProductsPage() {
     // Resolve lang param (server-provided in app router)
     // We don't need translations for filters UI in this demo
     const router = useRouter();

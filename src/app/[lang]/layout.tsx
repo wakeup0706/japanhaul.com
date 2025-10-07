@@ -1,5 +1,4 @@
 "use client";
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { usePathname, useParams } from "next/navigation";
 import { CartProvider } from "@/app/(cart)/CartContext";
