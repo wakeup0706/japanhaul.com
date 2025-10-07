@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 const categories = [
     { slug: "trending", icon: "🔥", en: "Trending", ja: "トレンド" },
@@ -10,6 +11,7 @@ const categories = [
 ];
 
 export default function CategoryBar({ lang }: { lang: "en" | "ja" }) {
+    const t = useTranslations("category");
     return (
         <div className="bg-white border-b sticky top-[56px] z-30">
             <div className="w-full px-4 py-2 overflow-x-auto">
@@ -18,7 +20,7 @@ export default function CategoryBar({ lang }: { lang: "en" | "ja" }) {
                         <li key={c.slug}>
                             <Link href={`/${lang}/products`} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 hover:bg-gray-100">
                                 <span aria-hidden>{c.icon}</span>
-                                <span>{lang === "ja" ? c.ja : c.en}</span>
+                                <span>{t(c.slug)}</span>
                             </Link>
                         </li>
                     ))}

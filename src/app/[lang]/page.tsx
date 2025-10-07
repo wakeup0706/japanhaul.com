@@ -1,26 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
+import { getTranslations } from "next-intl/server";
 
 export default async function LocalizedHome({ params }: { params: Promise<{ lang: string }> }) {
     const { lang: rawLang } = await params;
     const lang = rawLang === "ja" ? "ja" : "en";
-
-    const copy = {
-        en: {
-            bundleTitle: "Japanese Halloween Bundle",
-            bundleDesc: "Trick or treat yourself to this devilishly good Halloween Bundle! Featuring all the best Halloween snacks Japan has to offer!",
-            viewCollection: "View Collection",
-            spotlight1: "Pokemon Halloween Collection",
-            spotlight2: "Starbucks Tsukimi Collection",
-        },
-        ja: {
-            bundleTitle: "日本のハロウィンバンドル",
-            bundleDesc: "日本のベストなハロウィンスナックを詰め合わせたスペシャルバンドル！",
-            viewCollection: "コレクションを見る",
-            spotlight1: "ポケモン ハロウィン コレクション",
-            spotlight2: "スターバックス 月見 コレクション",
-        },
-    }[lang];
+    const t = await getTranslations({ locale: lang });
 
     const gridCards = Array.from({ length: 8 }).map((_, i) => i);
 
@@ -32,11 +17,11 @@ export default async function LocalizedHome({ params }: { params: Promise<{ lang
                 <div className="relative col-span-2 overflow-hidden rounded-2xl border bg-gradient-to-br from-purple-500 to-indigo-500 text-white">
                     <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_20%_20%,white,transparent_40%)]" />
                     <div className="relative p-6 sm:p-8 md:p-10">
-                        <div className="text-xs uppercase tracking-wide opacity-90 mb-2">Seasonal Exclusive</div>
-                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight">{copy.bundleTitle}</h1>
-                        <p className="mt-4 max-w-xl text-sm sm:text-base opacity-95">{copy.bundleDesc}</p>
+                        <div className="text-xs uppercase tracking-wide opacity-90 mb-2">{t("home.seasonal")}</div>
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight">{t("home.bundleTitle")}</h1>
+                        <p className="mt-4 max-w-xl text-sm sm:text-base opacity-95">{t("home.bundleDesc")}</p>
                         <Link href={`/${lang}/products`} className="mt-6 inline-block rounded-full bg-white px-5 py-2 text-sm font-semibold text-black shadow-sm">
-                            Shop Now
+                            {t("home.shopNow")}
                         </Link>
                     </div>
                 </div>
@@ -46,18 +31,18 @@ export default async function LocalizedHome({ params }: { params: Promise<{ lang
                     <div className="relative overflow-hidden rounded-2xl border bg-indigo-100">
                         <div className="p-5">
                             <div className="text-[10px] uppercase tracking-wide text-indigo-600">Limited Quantity</div>
-                            <div className="mt-1 text-lg font-semibold">{copy.spotlight1}</div>
+                            <div className="mt-1 text-lg font-semibold">{t("home.spotlight1")}</div>
                             <Link href={`/${lang}/products`} className="mt-4 inline-block rounded-full bg-black px-4 py-1.5 text-xs font-medium text-white">
-                                {copy.viewCollection}
+                                {t("home.viewCollection")}
                             </Link>
                         </div>
                     </div>
                     <div className="relative overflow-hidden rounded-2xl border bg-emerald-100">
                         <div className="p-5">
                             <div className="text-[10px] uppercase tracking-wide text-emerald-700">Limited Quantity</div>
-                            <div className="mt-1 text-lg font-semibold">{copy.spotlight2}</div>
+                            <div className="mt-1 text-lg font-semibold">{t("home.spotlight2")}</div>
                             <Link href={`/${lang}/products`} className="mt-4 inline-block rounded-full bg-black px-4 py-1.5 text-xs font-medium text-white">
-                                {copy.viewCollection}
+                                {t("home.viewCollection")}
                             </Link>
                         </div>
                     </div>

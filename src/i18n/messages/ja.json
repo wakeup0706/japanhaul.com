@@ -1,0 +1,43 @@
+{
+  "site": {"title": "JapanHaul"},
+  "search": {"placeholder": "検索"},
+  "auth": {"login": "ログイン"},
+  "promo": {
+    "messages": [
+      "コード LAUNCH30 で30%オフ!",
+      "米国へは民間配送で通常通り発送中",
+      "アドベントカレンダー先行予約で20%オフ!"
+    ]
+  },
+  "category": {
+    "trending": "トレンド",
+    "new": "新着",
+    "sale": "セール",
+    "snacks": "スナック",
+    "kawaii": "かわいい",
+    "beauty": "ビューティー"
+  },
+  "home": {
+    "seasonal": "限定",
+    "shopNow": "今すぐ購入",
+    "viewCollection": "コレクションを見る",
+    "spotlight1": "ポケモン ハロウィン コレクション",
+    "spotlight2": "スターバックス 月見 コレクション",
+    "bundleTitle": "日本のハロウィンバンドル",
+    "bundleDesc": "日本のベストなハロウィンスナックを詰め合わせたスペシャルバンドル！"
+  },
+  "checkout": {
+    "title": "チェックアウト",
+    "contact": "連絡先",
+    "email": "メール",
+    "delivery": "配送",
+    "payment": "支払い",
+    "pay": "今すぐ支払う",
+    "discount": "割引コードまたはギフトカード",
+    "subtotal": "小計",
+    "shipping": "送料",
+    "enterShipping": "配送先住所を入力",
+    "total": "合計"
+  }
+}
+

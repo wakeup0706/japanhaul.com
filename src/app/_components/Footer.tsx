@@ -1,4 +1,5 @@
 export default function Footer() {
+    // For brevity, footer remains static English; could be moved to i18n if needed
     return (
         <footer className="mt-10 bg-black text-white">
             <div className="w-full px-6 lg:px-10 py-12 grid grid-cols-1 sm:grid-cols-3 gap-8 text-base">

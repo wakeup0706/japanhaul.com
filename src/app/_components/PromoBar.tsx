@@ -1,18 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-
-const MESSAGES = [
-    "Use code LAUNCH30 to get 30% OFF!",
-    "We're still shipping to the U.S. via private carriers",
-    "Preorder now & save 20% on Advent Calendars!",
-];
+import { useTranslations } from "next-intl";
 
 export default function PromoBar() {
+    const t = useTranslations("promo");
     const [index, setIndex] = useState(0);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-    const message = useMemo(() => MESSAGES[index % MESSAGES.length], [index]);
+    const messages = t.raw("messages") as string[];
+    const message = useMemo(() => messages[index % messages.length], [index, messages]);
 
     useEffect(() => {
         intervalRef.current = setInterval(() => setIndex((i) => i + 1), 4000);

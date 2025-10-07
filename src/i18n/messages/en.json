@@ -1,0 +1,49 @@
+{
+  "site": {
+    "title": "JapanHaul"
+  },
+  "search": {
+    "placeholder": "Search"
+  },
+  "auth": {
+    "login": "Log in"
+  },
+  "promo": {
+    "messages": [
+      "Use code LAUNCH30 to get 30% OFF!",
+      "We're still shipping to the U.S. via private carriers",
+      "Preorder now & save 20% on Advent Calendars!"
+    ]
+  },
+  "category": {
+    "trending": "Trending",
+    "new": "New",
+    "sale": "Sale",
+    "snacks": "Snacks",
+    "kawaii": "Kawaii",
+    "beauty": "Beauty"
+  },
+  "home": {
+    "seasonal": "Seasonal Exclusive",
+    "shopNow": "Shop Now",
+    "viewCollection": "View Collection",
+    "spotlight1": "Pokemon Halloween Collection",
+    "spotlight2": "Starbucks Tsukimi Collection",
+    "bundleTitle": "Japanese Halloween Bundle",
+    "bundleDesc": "Trick or treat yourself to this devilishly good Halloween Bundle! Featuring all the best Halloween snacks Japan has to offer!"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "contact": "Contact",
+    "email": "Email",
+    "delivery": "Delivery",
+    "payment": "Payment",
+    "pay": "Pay now",
+    "discount": "Discount code or gift card",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "enterShipping": "Enter shipping address",
+    "total": "Total"
+  }
+}
+

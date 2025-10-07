@@ -57,7 +57,7 @@ export default function CartDrawer({ lang, open, onClose }: { lang: string; open
                     </div>
                     <div className="flex gap-3">
                         <Link href={`/${lang}/cart`} className="flex-1 rounded-full border px-4 py-3 text-center text-base font-medium transition-colors hover:bg-indigo-600 hover:text-white hover:border-indigo-600" onClick={onClose}>View Cart</Link>
-                        <button className="flex-1 rounded-full bg-black px-4 py-3 text-base font-semibold text-white transition-colors hover:bg-indigo-700">Checkout</button>
+                        <Link href={`/${lang}/checkout`} className="flex-1 rounded-full bg-black px-4 py-3 text-center text-base font-semibold text-white transition-colors hover:bg-indigo-700" onClick={onClose}>Checkout</Link>
                     </div>
                 </div>
             </aside>
