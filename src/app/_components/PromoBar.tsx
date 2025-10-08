@@ -1,34 +1,74 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
 
 export default function PromoBar() {
-    const t = useTranslations("promo");
-    const [index, setIndex] = useState(0);
-    const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    const [currentIndex, setCurrentIndex] = useState(0);
 
-    const messages = t.raw("messages") as string[];
-    const message = useMemo(() => messages[index % messages.length], [index, messages]);
+    const messages = [
+        "We're still shipping to the U.S as usual via private carriers",
+        "Use Code LAUNCH30 to get 30% Off!",
+        "Preorder Now & Save 20% OFF Japanese Advent Calendars!"
+    ];
 
     useEffect(() => {
-        intervalRef.current = setInterval(() => setIndex((i) => i + 1), 4000);
-        return () => {
-            if (intervalRef.current) clearInterval(intervalRef.current);
-        };
+        const interval = setInterval(() => {
+            setCurrentIndex((prev) => (prev + 1) % messages.length);
+        }, 4000);
+
+        return () => clearInterval(interval);
     }, []);
 
+    const goToPrevious = () => {
+        setCurrentIndex((prev) => (prev - 1 + messages.length) % messages.length);
+    };
+
+    const goToNext = () => {
+        setCurrentIndex((prev) => (prev + 1) % messages.length);
+    };
+
     return (
-        <div className="bg-black text-white text-center text-xs sm:text-sm py-3 px-3">
-            <div className="w-full flex items-center justify-center gap-3">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/70" />
-                <div className="relative h-5 overflow-hidden" aria-live="polite">
-                    <div key={index} className="animate-[fadeSlide_400ms_ease] whitespace-nowrap">
-                        <span className="font-medium">{message}</span>
+        <div className="bg-red-600 text-white">
+            <div className="w-full px-4 py-3">
+                <div className="flex items-center justify-center gap-4">
+                    {/* Previous Arrow */}
+                    <button
+                        onClick={goToPrevious}
+                        className="flex-shrink-0 text-white/80 hover:text-white transition-colors"
+                        aria-label="Previous message"
+                    >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                    </button>
+
+                    {/* Message Content */}
+                    <div className="flex-1 text-center">
+                        <div className="relative h-5 overflow-hidden">
+                            <div
+                                key={currentIndex}
+                                className="animate-[fadeSlide_400ms_ease] absolute inset-0 flex items-center justify-center"
+                            >
+                                <span className="text-sm font-medium px-2">
+                                    {messages[currentIndex]}
+                                </span>
+                            </div>
+                        </div>
                     </div>
+
+                    {/* Next Arrow */}
+                    <button
+                        onClick={goToNext}
+                        className="flex-shrink-0 text-white/80 hover:text-white transition-colors"
+                        aria-label="Next message"
+                    >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                        </svg>
+                    </button>
                 </div>
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/70" />
             </div>
+
             <style jsx>{`
                 @keyframes fadeSlide {
                     0% { opacity: 0; transform: translateY(6px); }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
+import HeroCarousel from "@/app/_components/HeroCarousel";
 
 export default async function LocalizedHome({ params }: { params: Promise<{ lang: string }> }) {
     const { lang: rawLang } = await params;
@@ -11,42 +12,9 @@ export default async function LocalizedHome({ params }: { params: Promise<{ lang
 
     return (
         <section>
-            {/* Hero and side spotlights */}
-            <div className="w-full px-6 lg:px-10 py-8 mb-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {/* Hero */}
-                <div className="relative col-span-2 overflow-hidden rounded-2xl border bg-gradient-to-br from-purple-500 to-indigo-500 text-white">
-                    <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_20%_20%,white,transparent_40%)]" />
-                    <div className="relative p-6 sm:p-8 md:p-10">
-                        <div className="text-xs uppercase tracking-wide opacity-90 mb-2">{t("home.seasonal")}</div>
-                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight">{t("home.bundleTitle")}</h1>
-                        <p className="mt-4 max-w-xl text-sm sm:text-base opacity-95">{t("home.bundleDesc")}</p>
-                        <Link href={`/${lang}/products`} className="mt-6 inline-block rounded-full bg-white px-5 py-2 text-sm font-semibold text-black shadow-sm">
-                            {t("home.shopNow")}
-                        </Link>
-                    </div>
-                </div>
-
-                {/* Spotlight cards */}
-                <div className="grid grid-rows-2 gap-4">
-                    <div className="relative overflow-hidden rounded-2xl border bg-indigo-100">
-                        <div className="p-5">
-                            <div className="text-[10px] uppercase tracking-wide text-indigo-600">{t("home.limited")}</div>
-                            <div className="mt-1 text-lg font-semibold">{t("home.spotlight1")}</div>
-                            <Link href={`/${lang}/products`} className="mt-4 inline-block rounded-full bg-black px-4 py-1.5 text-xs font-medium text-white">
-                                {t("home.viewCollection")}
-                            </Link>
-                        </div>
-                    </div>
-                    <div className="relative overflow-hidden rounded-2xl border bg-emerald-100">
-                        <div className="p-5">
-                            <div className="text-[10px] uppercase tracking-wide text-emerald-700">{t("home.limited")}</div>
-                            <div className="mt-1 text-lg font-semibold">{t("home.spotlight2")}</div>
-                            <Link href={`/${lang}/products`} className="mt-4 inline-block rounded-full bg-black px-4 py-1.5 text-xs font-medium text-white">
-                                {t("home.viewCollection")}
-                            </Link>
-                        </div>
-                    </div>
-                </div>
+            {/* Hero Carousel */}
+            <div className="w-full px-6 lg:px-10 py-8 mb-6">
+                <HeroCarousel lang={lang} />
             </div>
 
             {/* Product grid placeholder */}
