@@ -193,7 +193,7 @@ export default function HeroCarousel({ lang }: HeroCarouselProps) {
         {/* Second Column - Two rows: Pokemon (top) and Starbucks (bottom) */}
         <div className="lg:col-span-2 space-y-3 lg:space-y-4">
           {/* Pokemon Halloween Collection */}
-          <div className="relative h-[280px] lg:h-[325px] overflow-hidden rounded-2xl">
+          <div className="relative h-[325px] lg:h-[325px] overflow-hidden rounded-2xl">
             <Image
               src="/hero_2.jpg"
               alt="Pokemon Halloween Collection"
@@ -221,7 +221,7 @@ export default function HeroCarousel({ lang }: HeroCarouselProps) {
           </div>
 
           {/* Starbucks Tsukimi Collection */}
-          <div className="relative h-[280px] lg:h-[325px] overflow-hidden rounded-2xl">
+          <div className="relative h-[325px] lg:h-[325px] overflow-hidden rounded-2xl">
             <Image
               src="/hero_3.jpg"
               alt="Starbucks Tsukimi Collection"
