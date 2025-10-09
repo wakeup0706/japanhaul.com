@@ -138,6 +138,7 @@ export default function AccountPage() {
                 } else if (firebaseError.code === 'auth/weak-password') {
                     errorMessage = lang === 'ja' ? '新しいパスワードが弱すぎます。' : 'New password is too weak.';
                 }
+            }
 
             setMessage({ type: 'error', text: errorMessage });
         } finally {
