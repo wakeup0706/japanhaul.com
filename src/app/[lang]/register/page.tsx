@@ -1,17 +1,103 @@
+"use client";
 import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
 
-export default async function RegisterPage({ params }: { params: Promise<{ lang: string }> }) {
-    const { lang: rawLang } = await params;
-	const lang = rawLang === "ja" ? "ja" : "en";
+export default function RegisterPage() {
+    const { lang: rawLang } = useParams<{ lang: string }>();
+    const router = useRouter();
+
+    const lang = rawLang === "ja" ? "ja" : "en";
     const t = {
         en: { title: "Register", name: "Name", email: "Email", password: "Password", submit: "Create account", signin: "Sign in", google: "Create account with Google" },
         ja: { title: "新規登録", name: "名前", email: "メール", password: "パスワード", submit: "アカウント作成", signin: "ログイン", google: "Googleでアカウント作成" },
     }[lang];
 
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setMessage(null);
+
+        try {
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name,
+                    email,
+                    password,
+                    isGoogleSignIn: false,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Redirect to login page with success message
+                router.push(`/${lang}/login?message=RegistrationSuccess`);
+            } else {
+                setMessage({ type: 'error', text: data.error });
+            }
+        } catch (error) {
+            setMessage({ type: 'error', text: lang === 'ja' ? '登録エラー' : 'Registration error' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGoogleSignIn = async () => {
+        setLoading(true);
+        setMessage(null);
+
+        try {
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    isGoogleSignIn: true,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Redirect to dashboard or home page
+                router.push('/');
+            } else {
+                setMessage({ type: 'error', text: data.error });
+            }
+        } catch (error) {
+            setMessage({ type: 'error', text: lang === 'ja' ? 'Google登録エラー' : 'Google registration error' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <section className="max-w-sm mx-auto px-4 py-14">
             <h1 className="text-2xl font-semibold mb-6">{t.title}</h1>
-            <Link href="/api/auth/login?screen_hint=signup" className="w-full inline-flex items-center justify-center gap-3 rounded border px-5 py-3 text-base font-medium mb-4 hover:bg-gray-50 transition-colors">
+
+            {message && (
+                <div className={`mb-4 p-3 rounded ${message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    {message.text}
+                </div>
+            )}
+
+            <button
+                onClick={handleGoogleSignIn}
+                disabled={loading}
+                className="w-full inline-flex items-center justify-center gap-3 rounded border px-5 py-3 text-base font-medium mb-4 hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
                 <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white ring-1 ring-gray-200 shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="h-4 w-4" aria-hidden>
                         <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.778 32.659 29.273 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.957 3.043l5.657-5.657C34.943 6.053 29.743 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20c10.493 0 19.128-7.652 19.128-20 0-1.341-.138-2.651-.517-3.917z"/>
@@ -21,13 +107,42 @@ export default async function RegisterPage({ params }: { params: Promise<{ lang:
                     </svg>
                 </span>
                 {t.google}
-            </Link>
-            <form className="space-y-4">
-                <input className="border rounded p-3 w-full text-base" placeholder={t.name} />
-                <input className="border rounded p-3 w-full text-base" placeholder={t.email} />
-                <input type="password" className="border rounded p-3 w-full text-base" placeholder={t.password} />
-                <Link href="/api/auth/login?screen_hint=signup" className="w-full inline-flex items-center justify-center bg-black text-white px-5 py-3 rounded text-base font-medium">{t.submit}</Link>
+            </button>
+
+            <form className="space-y-4" onSubmit={handleSubmit}>
+                <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    className="border rounded p-3 w-full text-base"
+                    placeholder={t.name}
+                />
+                <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="border rounded p-3 w-full text-base"
+                    placeholder={t.email}
+                />
+                <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="border rounded p-3 w-full text-base"
+                    placeholder={t.password}
+                />
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-black text-white px-5 py-3 rounded text-base font-medium disabled:opacity-50"
+                >
+                    {loading ? '...' : t.submit}
+                </button>
             </form>
+
             <div className="mt-6 text-center text-base">
                 <Link href={`/${lang}/login`} className="inline-block underline hover:no-underline">{t.signin}</Link>
             </div>

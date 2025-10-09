@@ -1,19 +1,113 @@
 "use client";
-import { useParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useState, useEffect } from "react";
 
 export default function LoginPage() {
     const { lang: rawLang } = useParams<{ lang: string }>();
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
     const lang = rawLang === "ja" ? "ja" : "en";
     const t = {
         en: { title: "Log in", email: "Email", password: "Password", submit: "Log in", create: "Create Account", forgot: "Forgot password?", google: "Continue with Google" },
         ja: { title: "ログイン", email: "メール", password: "パスワード", submit: "ログイン", create: "アカウント作成", forgot: "パスワードをお忘れですか?", google: "Googleで続行" },
     }[lang];
 
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+    useEffect(() => {
+        const message = searchParams.get('message');
+        const error = searchParams.get('error');
+
+        if (message === 'PasswordReset') {
+            setMessage({ type: 'success', text: lang === 'ja' ? 'パスワードが正常にリセットされました' : 'Password reset successfully!' });
+        } else if (error) {
+            setMessage({ type: 'error', text: error });
+        }
+    }, [searchParams, lang]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setMessage(null);
+
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email,
+                    password,
+                    isGoogleSignIn: false,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Redirect to dashboard or home page
+                router.push('/');
+            } else {
+                setMessage({ type: 'error', text: data.error });
+            }
+        } catch (error) {
+            setMessage({ type: 'error', text: lang === 'ja' ? 'ログインエラー' : 'Login error' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGoogleSignIn = async () => {
+        setLoading(true);
+        setMessage(null);
+
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    isGoogleSignIn: true,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Redirect to dashboard or home page
+                router.push('/');
+            } else {
+                setMessage({ type: 'error', text: data.error });
+            }
+        } catch (error) {
+            setMessage({ type: 'error', text: lang === 'ja' ? 'Googleログインエラー' : 'Google sign-in error' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <section className="max-w-sm mx-auto px-4 py-14">
             <h1 className="text-2xl font-semibold mb-6">{t.title}</h1>
-            <Link href="/api/auth/login" className="w-full inline-flex items-center justify-center gap-3 rounded border px-5 py-3 text-base font-medium mb-4 hover:bg-gray-50 transition-colors">
+
+            {message && (
+                <div className={`mb-4 p-3 rounded ${message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    {message.text}
+                </div>
+            )}
+
+            <button
+                onClick={handleGoogleSignIn}
+                disabled={loading}
+                className="w-full inline-flex items-center justify-center gap-3 rounded border px-5 py-3 text-base font-medium mb-4 hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
                 {/* Polished Google icon in a circular badge */}
                 <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white ring-1 ring-gray-200 shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="h-4 w-4" aria-hidden>
@@ -24,12 +118,34 @@ export default function LoginPage() {
                     </svg>
                 </span>
                 {t.google}
-            </Link>
-            <form className="space-y-4">
-                <input className="border rounded p-3 w-full text-base" placeholder={t.email} />
-                <input type="password" className="border rounded p-3 w-full text-base" placeholder={t.password} />
-                <button className="w-full bg-black text-white px-5 py-3 rounded text-base font-medium">{t.submit}</button>
+            </button>
+
+            <form className="space-y-4" onSubmit={handleSubmit}>
+                <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="border rounded p-3 w-full text-base"
+                    placeholder={t.email}
+                />
+                <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="border rounded p-3 w-full text-base"
+                    placeholder={t.password}
+                />
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-black text-white px-5 py-3 rounded text-base font-medium disabled:opacity-50"
+                >
+                    {loading ? '...' : t.submit}
+                </button>
             </form>
+
             <div className="mt-6 flex items-center justify-between text-base">
                 <Link href={`/${lang}/register`} className="underline hover:no-underline">{t.create}</Link>
                 <Link href={`/${lang}/forgot-password`} className="underline hover:no-underline">{t.forgot}</Link>

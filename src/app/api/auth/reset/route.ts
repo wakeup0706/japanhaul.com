@@ -1,14 +1,52 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyPasswordResetCode, confirmPasswordReset } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const email = searchParams.get('email') || '';
-  // Redirect to Auth0 universal password reset page. Auth0 must be configured to allow password reset.
-  // This will show a form that sends a secret reset link to the provided email.
-  const domain = process.env.AUTH0_ISSUER_BASE_URL || '';
-  const clientId = process.env.AUTH0_CLIENT_ID || '';
-  const url = `${domain}/lo/reset?client_id=${encodeURIComponent(clientId)}&email=${encodeURIComponent(email)}`;
-  return NextResponse.redirect(url);
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const mode = searchParams.get('mode');
+  const oobCode = searchParams.get('oobCode');
+
+  if (mode === 'resetPassword' && oobCode) {
+    try {
+      // Verify the password reset code
+      await verifyPasswordResetCode(auth, oobCode);
+      // Redirect to reset password page with the code
+      return NextResponse.redirect(
+        new URL(`/reset-password?mode=${mode}&oobCode=${oobCode}`, request.url)
+      );
+    } catch (error) {
+      console.error('Error verifying reset code:', error);
+      return NextResponse.redirect(new URL('/login?error=InvalidResetCode', request.url));
+    }
+  }
+
+  return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
 }
 
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { oobCode, newPassword } = body;
 
+    if (!oobCode || !newPassword) {
+      return NextResponse.json(
+        { success: false, error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    await confirmPasswordReset(auth, oobCode, newPassword);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Password reset successfully'
+    });
+  } catch (error: any) {
+    console.error('Password reset error:', error);
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 400 }
+    );
+  }
+}
