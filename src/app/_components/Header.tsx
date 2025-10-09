@@ -8,12 +8,16 @@ import { products } from "@/app/_data/products";
 import CartDrawer from "@/app/_components/CartDrawer";
 import { useCart } from "@/app/(cart)/CartContext";
 import { useTranslations } from "next-intl";
+import { onAuthStateChanged, signOut, User } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 export default function Header({ lang }: { lang: "en" | "ja" }) {
     const t = useTranslations();
     const [open, setOpen] = useState(false);
     const [cartOpen, setCartOpen] = useState(false);
     const [query, setQuery] = useState("");
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
     const pathname = usePathname();
     const cart = useCart();
     const itemCount = cart?.state.items.reduce((s, i) => s + i.quantity, 0) ?? 0;
@@ -24,11 +28,38 @@ export default function Header({ lang }: { lang: "en" | "ja" }) {
         const handler: EventListener = () => onOpen();
         window.addEventListener("cart:open", handler);
         document.addEventListener("cart:open", handler);
+
+        // Listen for auth state changes
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            setCurrentUser(user);
+        });
+
+        // Close user menu when clicking outside
+        const handleClickOutside = (event: MouseEvent) => {
+            if (userMenuOpen && !(event.target as Element).closest('.user-menu')) {
+                setUserMenuOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+
         return () => {
             window.removeEventListener("cart:open", handler);
             document.removeEventListener("cart:open", handler);
+            document.removeEventListener('mousedown', handleClickOutside);
+            unsubscribe();
         };
-    }, []);
+    }, [userMenuOpen]);
+
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+            setUserMenuOpen(false);
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+    };
+
 	return (
 		<div className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b">
             <div className="w-full px-4 py-3 flex items-center gap-4">
@@ -62,10 +93,69 @@ export default function Header({ lang }: { lang: "en" | "ja" }) {
                     <button type="button" aria-label="Search" onClick={() => setOpen(true)} className="rounded-full p-2 hover:bg-gray-100">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6"><path fillRule="evenodd" d="M10.5 3.75a6.75 6.75 0 1 0 4.21 12.02l3.76 3.76a.75.75 0 1 0 1.06-1.06l-3.76-3.76A6.75 6.75 0 0 0 10.5 3.75Zm-5.25 6.75a5.25 5.25 0 1 1 10.5 0 5.25 5.25 0 0 1-10.5 0Z" clipRule="evenodd"/></svg>
                     </button>
-                    <Link href={`/${lang}/login`} className="flex items-center gap-1 hover:underline">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6"><path d="M12 2a5 5 0 0 0-5 5v1a5 5 0 0 0 10 0V7a5 5 0 0 0-5-5Zm7 18.25A7.75 7.75 0 0 0 11.25 12h-1.5A7.75 7.75 0 0 0 2 20.25c0 .414.336.75.75.75h17.5a.75.75 0 0 0 .75-.75Z"/></svg>
-                        <span className="hidden sm:inline">{t("auth.login")}</span>
-                    </Link>
+                    {/* User menu or login link */}
+                    {currentUser ? (
+                        <div className="relative user-menu">
+                            <button
+                                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                                className="flex items-center gap-2 hover:bg-gray-100 rounded-full px-3 py-2 transition-colors"
+                            >
+                                {currentUser.photoURL ? (
+                                    <img
+                                        src={currentUser.photoURL}
+                                        alt={currentUser.displayName || 'User'}
+                                        className="h-8 w-8 rounded-full"
+                                    />
+                                ) : (
+                                    <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-gray-600">
+                                            <path d="M12 2a5 5 0 0 0-5 5v1a5 5 0 0 0 10 0V7a5 5 0 0 0-5-5Zm7 18.25A7.75 7.75 0 0 0 11.25 12h-1.5A7.75 7.75 0 0 0 2 20.25c0 .414.336.75.75.75h17.5a.75.75 0 0 0 .75-.75Z"/>
+                                        </svg>
+                                    </div>
+                                )}
+                                <span className="hidden sm:inline text-sm font-medium">
+                                    {currentUser.displayName || currentUser.email?.split('@')[0] || 'User'}
+                                </span>
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+                                    <path fillRule="evenodd" d="M12.53 16.28a.75.75 0 0 1-1.06 0l-7.5-7.5a.75.75 0 0 1 1.06-1.06L12 14.69l6.97-6.97a.75.75 0 1 1 1.06 1.06l-7.5 7.5Z" clipRule="evenodd"/>
+                                </svg>
+                            </button>
+
+                            {/* User dropdown menu */}
+                            {userMenuOpen && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50 user-menu">
+                                    <div className="px-4 py-3 border-b border-gray-100">
+                                        <p className="text-sm font-medium text-gray-900">
+                                            {currentUser.displayName || 'User'}
+                                        </p>
+                                        <p className="text-sm text-gray-500 truncate">
+                                            {currentUser.email}
+                                        </p>
+                                    </div>
+                                    <div className="py-1">
+                                        <Link
+                                            href={`/${lang}/account`}
+                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                            onClick={() => setUserMenuOpen(false)}
+                                        >
+                                            {lang === 'ja' ? 'アカウント' : 'Account'}
+                                        </Link>
+                                        <button
+                                            onClick={handleLogout}
+                                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        >
+                                            {lang === 'ja' ? 'ログアウト' : 'Log out'}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <Link href={`/${lang}/login`} className="flex items-center gap-1 hover:underline">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6"><path d="M12 2a5 5 0 0 0-5 5v1a5 5 0 0 0 10 0V7a5 5 0 0 0-5-5Zm7 18.25A7.75 7.75 0 0 0 11.25 12h-1.5A7.75 7.75 0 0 0 2 20.25c0 .414.336.75.75.75h17.5a.75.75 0 0 0 .75-.75Z"/></svg>
+                            <span className="hidden sm:inline">{t("auth.login")}</span>
+                        </Link>
+                    )}
                     <button onClick={() => setCartOpen(true)} className="relative inline-flex items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-7 w-7"><path d="M2.25 3a.75.75 0 0 0 0 1.5h1.306l2.65 9.278A3 3 0 0 0 9.09 16.5h7.32a3 3 0 0 0 2.884-2.222l1.494-5.353A.75.75 0 0 0 20.07 8.5H6.246L5.37 5.5h14.38a.75.75 0 0 0 0-1.5H5.003a1.5 1.5 0 0 0-1.445 1.098L3.556 6.5H2.25ZM9 18.75A1.75 1.75 0 1 0 9 22.25a1.75 1.75 0 0 0 0-3.5Zm8.25 1.75a1.75 1.75 0 1 1-3.5 0 1.75 1.75 0 0 1 3.5 0Z"/></svg>
                         {mounted && itemCount > 0 && (
