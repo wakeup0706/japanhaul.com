@@ -80,7 +80,7 @@ export default function RegisterPage() {
             let errorMessage = lang === 'ja' ? '登録エラー' : 'Registration error';
 
             if (error instanceof Error) {
-                const firebaseError = error as any;
+                const firebaseError = error as { code?: string };
                 if (firebaseError.code === 'auth/email-already-in-use') {
                     errorMessage = lang === 'ja'
                         ? 'このメールアドレスは既に登録されています。ログインするか、他のメールアドレスを使用してください。'
@@ -162,7 +162,7 @@ export default function RegisterPage() {
             let errorMessage = lang === 'ja' ? 'Google登録エラー' : 'Google registration error';
 
             if (error instanceof Error) {
-                const firebaseError = error as any;
+                const firebaseError = error as { code?: string };
                 if (firebaseError.code === 'auth/account-exists-with-different-credential') {
                     errorMessage = lang === 'ja'
                         ? 'このメールアドレスは既に他の認証方法で登録されています。'

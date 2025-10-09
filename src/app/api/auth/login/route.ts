@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, isGoogleSignIn, uid, displayName, photoURL } = body;
+    const { email, uid, displayName, photoURL } = body;
 
     // Firebase Auth is now handled client-side
     // API route handles server-side operations only
