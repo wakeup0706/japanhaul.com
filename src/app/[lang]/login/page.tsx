@@ -75,6 +75,21 @@ export default function LoginPage() {
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
 
+            // Check if this user is already registered in Firebase Auth
+            // If it's a new user (not registered), sign them out and show error
+            if (result._tokenResponse?.isNewUser) {
+                // Sign out the new user immediately
+                await auth.signOut();
+                setMessage({
+                    type: 'error',
+                    text: lang === 'ja'
+                        ? 'このメールアドレスは登録されていません。アカウントを作成してください。'
+                        : 'This email is not registered. Please create an account first.'
+                });
+                return;
+            }
+
+            // User exists in Firebase Auth, proceed with login
             // Send user data to API for server-side processing (if needed)
             const response = await fetch('/api/auth/login', {
                 method: 'POST',

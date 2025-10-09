@@ -65,6 +65,21 @@ export default function RegisterPage() {
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
 
+            // Check if this user is already registered in Firebase Auth
+            // If user already exists, this is an error for registration - redirect to login
+            if (!result._tokenResponse?.isNewUser) {
+                // User already exists, redirect to login
+                await auth.signOut();
+                setMessage({
+                    type: 'error',
+                    text: lang === 'ja'
+                        ? 'このメールアドレスは既に登録されています。ログインしてください。'
+                        : 'This email is already registered. Please log in instead.'
+                });
+                return;
+            }
+
+            // User is new and being registered, proceed with registration
             // Send user data to API for server-side processing (if needed)
             const response = await fetch('/api/auth/register', {
                 method: 'POST',
