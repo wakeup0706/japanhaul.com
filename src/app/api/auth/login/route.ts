@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
-  signInWithPopup,
-  sendPasswordResetEmail
+  signInWithPopup
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
@@ -42,10 +41,10 @@ export async function POST(request: NextRequest) {
         }
       });
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: error instanceof Error ? error.message : 'Login failed' },
       { status: 400 }
     );
   }

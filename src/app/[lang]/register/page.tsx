@@ -46,7 +46,7 @@ export default function RegisterPage() {
             } else {
                 setMessage({ type: 'error', text: data.error });
             }
-        } catch (error) {
+        } catch {
             setMessage({ type: 'error', text: lang === 'ja' ? '登録エラー' : 'Registration error' });
         } finally {
             setLoading(false);
@@ -76,7 +76,7 @@ export default function RegisterPage() {
             } else {
                 setMessage({ type: 'error', text: data.error });
             }
-        } catch (error) {
+        } catch {
             setMessage({ type: 'error', text: lang === 'ja' ? 'Google登録エラー' : 'Google registration error' });
         } finally {
             setLoading(false);

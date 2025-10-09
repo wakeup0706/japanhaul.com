@@ -20,10 +20,10 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Password reset email sent successfully'
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Forgot password error:', error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: error instanceof Error ? error.message : 'An error occurred' },
       { status: 400 }
     );
   }

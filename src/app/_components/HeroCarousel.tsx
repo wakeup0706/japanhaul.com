@@ -21,7 +21,6 @@ interface HeroCarouselProps {
 }
 
 export default function HeroCarousel({ lang }: HeroCarouselProps) {
-  const t = useTranslations();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
@@ -53,21 +52,6 @@ export default function HeroCarousel({ lang }: HeroCarouselProps) {
       ctaText: "View Collection",
       ctaLink: `/${lang}/products?category=starbucks`,
       badge: "Limited Quantity"
-    }
-  ];
-
-  const sideSlides = [
-    {
-      id: "promo-1",
-      image: "/promo_1.jpg",
-      title: "Dive into the most viral Japanese products of the week!",
-      type: "viral"
-    },
-    {
-      id: "promo-2",
-      image: "/promo_2.jpg",
-      title: "Get your hands on the latest exclusive merch",
-      type: "exclusive"
     }
   ];
 

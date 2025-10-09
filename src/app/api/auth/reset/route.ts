@@ -42,10 +42,10 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Password reset successfully'
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Password reset error:', error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: error instanceof Error ? error.message : 'Password reset failed' },
       { status: 400 }
     );
   }

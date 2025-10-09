@@ -56,7 +56,7 @@ export default function LoginPage() {
             } else {
                 setMessage({ type: 'error', text: data.error });
             }
-        } catch (error) {
+        } catch {
             setMessage({ type: 'error', text: lang === 'ja' ? 'ログインエラー' : 'Login error' });
         } finally {
             setLoading(false);
@@ -86,7 +86,7 @@ export default function LoginPage() {
             } else {
                 setMessage({ type: 'error', text: data.error });
             }
-        } catch (error) {
+        } catch {
             setMessage({ type: 'error', text: lang === 'ja' ? 'Googleログインエラー' : 'Google sign-in error' });
         } finally {
             setLoading(false);

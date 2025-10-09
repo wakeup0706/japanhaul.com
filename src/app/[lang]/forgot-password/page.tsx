@@ -36,7 +36,7 @@ export default function ForgotPasswordPage() {
             } else {
                 setMessage({ type: 'error', text: data.error || t.error });
             }
-        } catch (error) {
+        } catch {
             setMessage({ type: 'error', text: t.error });
         } finally {
             setLoading(false);

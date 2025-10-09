@@ -49,10 +49,10 @@ export async function POST(request: NextRequest) {
         }
       });
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Registration error:', error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: error instanceof Error ? error.message : 'Registration failed' },
       { status: 400 }
     );
   }

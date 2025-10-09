@@ -17,7 +17,7 @@ export default function PromoBar() {
         }, 4000);
 
         return () => clearInterval(interval);
-    }, []);
+    }, [messages.length]);
 
     const goToPrevious = () => {
         setCurrentIndex((prev) => (prev - 1 + messages.length) % messages.length);
