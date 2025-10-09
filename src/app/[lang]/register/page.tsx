@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { sendVerificationEmail, generateVerificationCode } from '@/lib/email';
 
 export default function RegisterPage() {
     const { lang: rawLang } = useParams<{ lang: string }>();
@@ -18,8 +19,11 @@ export default function RegisterPage() {
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [verificationCode, setVerificationCode] = useState("");
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [showVerification, setShowVerification] = useState(false);
+    const [sentCode, setSentCode] = useState("");
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -27,40 +31,80 @@ export default function RegisterPage() {
         setMessage(null);
 
         try {
-            // Create user in Firebase Auth first (client-side)
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
+            if (!showVerification) {
+                // Step 1: Send verification code
+                const code = generateVerificationCode();
+                setSentCode(code);
 
-            // Update the user's display name
-            if (name) {
-                await updateProfile(user, {
-                    displayName: name
+                const emailSent = await sendVerificationEmail({
+                    email,
+                    verificationCode: code,
+                    name
                 });
-            }
 
-            // Send user data to API for server-side processing (if needed)
-            const response = await fetch('/api/auth/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    uid: user.uid,
-                    email: user.email,
-                    name,
-                    isGoogleSignIn: false,
-                }),
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                // Sign out the user after successful registration (they'll need to login)
-                await auth.signOut();
-                // Redirect to login page with success message
-                router.push(`/${lang}/login?message=RegistrationSuccess`);
+                if (emailSent) {
+                    setShowVerification(true);
+                    setMessage({
+                        type: 'success',
+                        text: lang === 'ja'
+                            ? '確認コードをメールアドレスに送信しました。'
+                            : 'Verification code sent to your email address.'
+                    });
+                } else {
+                    setMessage({
+                        type: 'error',
+                        text: lang === 'ja'
+                            ? '確認メールの送信に失敗しました。'
+                            : 'Failed to send verification email.'
+                    });
+                }
             } else {
-                setMessage({ type: 'error', text: data.error });
+                // Step 2: Verify code and create account
+                if (verificationCode !== sentCode) {
+                    setMessage({
+                        type: 'error',
+                        text: lang === 'ja'
+                            ? '確認コードが正しくありません。'
+                            : 'Invalid verification code.'
+                    });
+                    return;
+                }
+
+                // Create user in Firebase Auth
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // Update the user's display name
+                if (name) {
+                    await updateProfile(user, {
+                        displayName: name
+                    });
+                }
+
+                // Send user data to API for server-side processing (if needed)
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        uid: user.uid,
+                        email: user.email,
+                        name,
+                        isGoogleSignIn: false,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Sign out the user after successful registration (they'll need to login)
+                    await auth.signOut();
+                    // Redirect to login page with success message
+                    router.push(`/${lang}/login?message=RegistrationSuccess`);
+                } else {
+                    setMessage({ type: 'error', text: data.error });
+                }
             }
         } catch (error) {
             console.error('Registration error:', error);
@@ -163,6 +207,7 @@ export default function RegisterPage() {
                     required
                     className="border rounded p-3 w-full text-base"
                     placeholder={t.name}
+                    disabled={showVerification}
                 />
                 <input
                     type="email"
@@ -171,6 +216,7 @@ export default function RegisterPage() {
                     required
                     className="border rounded p-3 w-full text-base"
                     placeholder={t.email}
+                    disabled={showVerification}
                 />
                 <input
                     type="password"
@@ -179,14 +225,43 @@ export default function RegisterPage() {
                     required
                     className="border rounded p-3 w-full text-base"
                     placeholder={t.password}
+                    disabled={showVerification}
                 />
+
+                {showVerification && (
+                    <input
+                        type="text"
+                        value={verificationCode}
+                        onChange={(e) => setVerificationCode(e.target.value)}
+                        required
+                        className="border rounded p-3 w-full text-base"
+                        placeholder={lang === 'ja' ? '確認コードを入力してください' : 'Enter verification code'}
+                        maxLength={6}
+                    />
+                )}
+
                 <button
                     type="submit"
                     disabled={loading}
                     className="w-full bg-black text-white px-5 py-3 rounded text-base font-medium disabled:opacity-50"
                 >
-                    {loading ? '...' : t.submit}
+                    {loading ? '...' : (showVerification ? (lang === 'ja' ? 'アカウントを作成' : 'Create Account') : (lang === 'ja' ? '確認コードを送信' : 'Send Verification Code'))}
                 </button>
+
+                {showVerification && (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setShowVerification(false);
+                            setVerificationCode('');
+                            setSentCode('');
+                            setMessage(null);
+                        }}
+                        className="w-full mt-2 text-gray-600 underline hover:no-underline text-sm"
+                    >
+                        {lang === 'ja' ? '情報を変更する' : 'Change Information'}
+                    </button>
+                )}
             </form>
 
             <div className="mt-6 text-center text-base">
