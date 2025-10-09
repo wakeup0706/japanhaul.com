@@ -5,6 +5,12 @@ import { useState } from "react";
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
+// Authorized email addresses for registration (add your allowed emails here)
+const AUTHORIZED_EMAILS = [
+    'priyanshvijay2002@gmail.com',
+    '211f10041s@student.study.iitm.ac.in'
+];
+
 export default function RegisterPage() {
     const { lang: rawLang } = useParams<{ lang: string }>();
     const router = useRouter();
@@ -65,16 +71,15 @@ export default function RegisterPage() {
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
 
-            // Check if this user is already registered in Firebase Auth
-            // If user already exists, this is an error for registration - redirect to login
-            if (!result._tokenResponse?.isNewUser) {
-                // User already exists, redirect to login
+            // Check if this user's email is authorized for registration
+            if (!AUTHORIZED_EMAILS.includes(user.email)) {
+                // Sign out the unauthorized user immediately
                 await auth.signOut();
                 setMessage({
                     type: 'error',
                     text: lang === 'ja'
-                        ? 'このメールアドレスは既に登録されています。ログインしてください。'
-                        : 'This email is already registered. Please log in instead.'
+                        ? 'このメールアドレスは許可されていません。'
+                        : 'This email is not authorized for registration.'
                 });
                 return;
             }
