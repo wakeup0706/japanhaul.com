@@ -2,7 +2,7 @@
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
 export default function LoginPage() {
@@ -38,14 +38,21 @@ export default function LoginPage() {
         setMessage(null);
 
         try {
+            // Sign in with Firebase Auth first (client-side)
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            // Send user data to API for server-side processing (if needed)
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    email,
-                    password,
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: user.displayName,
+                    photoURL: user.photoURL,
                     isGoogleSignIn: false,
                 }),
             });
@@ -58,8 +65,12 @@ export default function LoginPage() {
             } else {
                 setMessage({ type: 'error', text: data.error });
             }
-        } catch {
-            setMessage({ type: 'error', text: lang === 'ja' ? 'ログインエラー' : 'Login error' });
+        } catch (error) {
+            console.error('Login error:', error);
+            setMessage({
+                type: 'error',
+                text: error instanceof Error ? error.message : (lang === 'ja' ? 'ログインエラー' : 'Login error')
+            });
         } finally {
             setLoading(false);
         }

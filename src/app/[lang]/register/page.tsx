@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
 export default function RegisterPage() {
@@ -27,15 +27,27 @@ export default function RegisterPage() {
         setMessage(null);
 
         try {
+            // Create user in Firebase Auth first (client-side)
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            // Update the user's display name
+            if (name) {
+                await updateProfile(user, {
+                    displayName: name
+                });
+            }
+
+            // Send user data to API for server-side processing (if needed)
             const response = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
+                    uid: user.uid,
+                    email: user.email,
                     name,
-                    email,
-                    password,
                     isGoogleSignIn: false,
                 }),
             });
@@ -43,13 +55,19 @@ export default function RegisterPage() {
             const data = await response.json();
 
             if (data.success) {
+                // Sign out the user after successful registration (they'll need to login)
+                await auth.signOut();
                 // Redirect to login page with success message
                 router.push(`/${lang}/login?message=RegistrationSuccess`);
             } else {
                 setMessage({ type: 'error', text: data.error });
             }
-        } catch {
-            setMessage({ type: 'error', text: lang === 'ja' ? '登録エラー' : 'Registration error' });
+        } catch (error) {
+            console.error('Registration error:', error);
+            setMessage({
+                type: 'error',
+                text: error instanceof Error ? error.message : (lang === 'ja' ? '登録エラー' : 'Registration error')
+            });
         } finally {
             setLoading(false);
         }
