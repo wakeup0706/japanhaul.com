@@ -58,21 +58,49 @@ export default function RegisterPage() {
             const data = await response.json();
 
             if (data.success) {
-                // Show email verification message instead of redirecting to login
+                // Show email verification message and redirect to login
                 setMessage({
                     type: 'success',
                     text: lang === 'ja'
                         ? 'アカウントが作成されました。メールアドレスを確認してログインしてください。'
                         : 'Account created successfully. Please check your email and verify your account before logging in.'
                 });
+                // Sign out user and redirect to login page after showing message
+                setTimeout(async () => {
+                    await auth.signOut();
+                    router.push(`/${lang}/login?message=RegistrationSuccess`);
+                }, 3000);
             } else {
                 setMessage({ type: 'error', text: data.error });
             }
         } catch (error) {
             console.error('Registration error:', error);
+
+            // Handle specific Firebase Auth errors
+            let errorMessage = lang === 'ja' ? '登録エラー' : 'Registration error';
+
+            if (error instanceof Error) {
+                const firebaseError = error as any;
+                if (firebaseError.code === 'auth/email-already-in-use') {
+                    errorMessage = lang === 'ja'
+                        ? 'このメールアドレスは既に登録されています。ログインするか、他のメールアドレスを使用してください。'
+                        : 'This email is already registered. Please log in or use a different email address.';
+                } else if (firebaseError.code === 'auth/weak-password') {
+                    errorMessage = lang === 'ja'
+                        ? 'パスワードが弱すぎます。6文字以上で作成してください。'
+                        : 'Password is too weak. Please use at least 6 characters.';
+                } else if (firebaseError.code === 'auth/invalid-email') {
+                    errorMessage = lang === 'ja'
+                        ? '無効なメールアドレスです。'
+                        : 'Invalid email address.';
+                } else {
+                    errorMessage = error.message;
+                }
+            }
+
             setMessage({
                 type: 'error',
-                text: error instanceof Error ? error.message : (lang === 'ja' ? '登録エラー' : 'Registration error')
+                text: errorMessage
             });
         } finally {
             setLoading(false);
@@ -129,7 +157,29 @@ export default function RegisterPage() {
             }
         } catch (error) {
             console.error('Google registration error:', error);
-            setMessage({ type: 'error', text: lang === 'ja' ? 'Google登録エラー' : 'Google registration error' });
+
+            // Handle specific Firebase Auth errors for Google sign-in
+            let errorMessage = lang === 'ja' ? 'Google登録エラー' : 'Google registration error';
+
+            if (error instanceof Error) {
+                const firebaseError = error as any;
+                if (firebaseError.code === 'auth/account-exists-with-different-credential') {
+                    errorMessage = lang === 'ja'
+                        ? 'このメールアドレスは既に他の認証方法で登録されています。'
+                        : 'This email is already registered with a different sign-in method.';
+                } else if (firebaseError.code === 'auth/popup-closed-by-user') {
+                    errorMessage = lang === 'ja'
+                        ? 'サインインがキャンセルされました。'
+                        : 'Sign-in was cancelled.';
+                } else {
+                    errorMessage = error.message;
+                }
+            }
+
+            setMessage({
+                type: 'error',
+                text: errorMessage
+            });
         } finally {
             setLoading(false);
         }
@@ -196,7 +246,17 @@ export default function RegisterPage() {
                 </button>
             </form>
 
-            <div className="mt-6 text-center text-base">
+            <div className="mt-6 text-center text-base space-y-2">
+                <button
+                    onClick={async () => {
+                        await auth.signOut();
+                        router.push(`/${lang}/login?message=RegistrationSuccess`);
+                    }}
+                    className="inline-block underline hover:no-underline text-blue-600"
+                >
+                    {lang === 'ja' ? '今すぐログインする' : 'Go to Login Now'}
+                </button>
+                <br />
                 <Link href={`/${lang}/login`} className="inline-block underline hover:no-underline">{t.signin}</Link>
             </div>
         </section>
