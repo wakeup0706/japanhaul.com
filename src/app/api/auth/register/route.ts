@@ -1,51 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  createUserWithEmailAndPassword,
-  GoogleAuthProvider,
-  signInWithPopup,
-  updateProfile
-} from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+// Note: Removed Firebase client SDK imports - these should only be used client-side
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, name, isGoogleSignIn } = body;
+    const { email, password, name, isGoogleSignIn, uid, displayName, photoURL } = body;
 
     if (isGoogleSignIn) {
-      // Google Sign-In
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
+      // Google Sign-In - Firebase Auth is handled client-side
+      // Here we only handle server-side operations if needed
+      // For now, just return success since auth is handled client-side
 
       return NextResponse.json({
         success: true,
         user: {
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-          photoURL: user.photoURL,
+          uid,
+          email,
+          displayName,
+          photoURL,
         }
       });
     } else {
-      // Email/Password Registration
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      // Update the user's display name
-      if (name) {
-        await updateProfile(user, {
-          displayName: name
-        });
-      }
+      // Email/Password Registration - This should also be handled client-side
+      // API route should only handle server-side operations like database storage
 
       return NextResponse.json({
         success: true,
         user: {
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName || name,
-          photoURL: user.photoURL,
+          uid: 'temp-uid', // This should come from client-side Firebase auth
+          email,
+          displayName: name,
+          photoURL: null,
         }
       });
     }

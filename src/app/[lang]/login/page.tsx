@@ -2,6 +2,8 @@
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 export default function LoginPage() {
     const { lang: rawLang } = useParams<{ lang: string }>();
@@ -68,12 +70,22 @@ export default function LoginPage() {
         setMessage(null);
 
         try {
+            // Google Sign-In using Firebase client SDK
+            const provider = new GoogleAuthProvider();
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+
+            // Send user data to API for server-side processing (if needed)
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: user.displayName,
+                    photoURL: user.photoURL,
                     isGoogleSignIn: true,
                 }),
             });
@@ -86,7 +98,8 @@ export default function LoginPage() {
             } else {
                 setMessage({ type: 'error', text: data.error });
             }
-        } catch {
+        } catch (error) {
+            console.error('Google sign-in error:', error);
             setMessage({ type: 'error', text: lang === 'ja' ? 'Googleログインエラー' : 'Google sign-in error' });
         } finally {
             setLoading(false);

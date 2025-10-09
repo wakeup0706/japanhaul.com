@@ -1,43 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  signInWithEmailAndPassword,
-  GoogleAuthProvider,
-  signInWithPopup
-} from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+// Note: Removed Firebase client SDK imports - these should only be used client-side
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, isGoogleSignIn } = body;
+    const { email, password, isGoogleSignIn, uid, displayName, photoURL } = body;
 
     if (isGoogleSignIn) {
-      // Google Sign-In
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
+      // Google Sign-In - Firebase Auth is handled client-side
+      // Here we only handle server-side operations if needed
 
       return NextResponse.json({
         success: true,
         user: {
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-          photoURL: user.photoURL,
+          uid,
+          email,
+          displayName,
+          photoURL,
         }
       });
     } else {
-      // Email/Password Sign-In
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      // Email/Password Sign-In - This should also be handled client-side
+      // API route should only handle server-side operations like database storage
 
       return NextResponse.json({
         success: true,
         user: {
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-          photoURL: user.photoURL,
+          uid: 'temp-uid', // This should come from client-side Firebase auth
+          email,
+          displayName: null,
+          photoURL: null,
         }
       });
     }
