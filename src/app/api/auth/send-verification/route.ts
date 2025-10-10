@@ -4,61 +4,48 @@ export async function POST(request: NextRequest) {
   try {
     const { email, verificationCode, name }: { email: string; verificationCode: string; name: string } = await request.json();
 
-    // Use Firebase Functions to send email (recommended approach)
-    const firebaseFunctionUrl = process.env.FIREBASE_FUNCTIONS_SEND_EMAIL_URL;
+    // Use Resend to send OTP emails (simple setup, no Firebase CLI needed)
+    const resendResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'JapanHaul <noreply@japanihaul.firebaseapp.com>',
+        to: [email],
+        subject: 'Verify your JapanHaul account',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>Welcome to JapanHaul!</h2>
+            <p>Hi ${name},</p>
+            <p>Your verification code is:</p>
+            <div style="background-color: #f0f0f0; padding: 20px; text-align: center; margin: 20px 0;">
+              <h1 style="color: #333; letter-spacing: 3px; font-size: 32px;">${verificationCode}</h1>
+            </div>
+            <p>Enter this code to complete your registration.</p>
+            <p><strong>This code expires in 10 minutes.</strong></p>
+            <p>Best regards,<br>JapanHaul Team</p>
+          </div>
+        `
+      })
+    });
 
-    if (firebaseFunctionUrl) {
-      // Call Firebase Function to send email
-      const response = await fetch(firebaseFunctionUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: email,
-          templateId: 'verification-email',
-          data: {
-            name: name,
-            verificationCode: verificationCode,
-            displayName: name || email.split('@')[0]
-          }
-        })
-      });
-
-      if (response.ok) {
-        console.log(`✅ Verification email sent via Firebase Functions to ${email}`);
-        return NextResponse.json({ success: true });
-      } else {
-        console.error('Firebase Functions error:', await response.text());
-      }
+    if (resendResponse.ok) {
+      console.log(`✅ OTP verification email sent to ${email}`);
+      return NextResponse.json({ success: true });
+    } else {
+      console.error('Resend API error:', await resendResponse.text());
+      return NextResponse.json(
+        { success: false, error: 'Failed to send OTP email' },
+        { status: 500 }
+      );
     }
 
-    // Fallback: Use console logging for development (emails won't be sent)
-    console.log(`
-      📧 VERIFICATION EMAIL (NOT SENT - Use Firebase Functions or Resend)
-
-      From: noreply@japanihaul.firebaseapp.com
-      To: ${name} <${email}>
-      Subject: Verify your JapanHaul account
-
-      Hi ${name},
-
-      Your verification code is: ${verificationCode}
-
-      Enter this code to complete your registration.
-
-      Best regards,
-      JapanHaul Team
-
-      To send real emails, set up:
-      1. Firebase Functions (recommended): See setup instructions below
-      2. Or use Resend: https://resend.com (add RESEND_API_KEY to .env.local)
-    `);
-
-    return NextResponse.json({ success: true });
-
   } catch (error) {
-    console.error('Failed to send verification email:', error);
+    console.error('Failed to send OTP email:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to send verification email' },
+      { success: false, error: 'Failed to send OTP email' },
       { status: 500 }
     );
   }
