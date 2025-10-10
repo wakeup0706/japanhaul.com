@@ -91,7 +91,8 @@
       "delivery": "配送",
       "login": "ログイン",
       "register": "登録",
-      "forgot-password": "パスワードをお忘れの方"
+      "forgot-password": "パスワードをお忘れの方",
+      "account": "アカウント"
     }
   },
   "products": {

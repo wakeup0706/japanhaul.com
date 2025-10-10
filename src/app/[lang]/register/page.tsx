@@ -2,8 +2,9 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import { GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { sendVerificationEmail, generateVerificationCode } from '@/lib/email';
 
 export default function RegisterPage() {
     const { lang: rawLang } = useParams<{ lang: string }>();
@@ -23,6 +24,9 @@ export default function RegisterPage() {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [showOtpInput, setShowOtpInput] = useState(false);
+    const [otp, setOtp] = useState("");
+    const [generatedOtp, setGeneratedOtp] = useState("");
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -39,6 +43,53 @@ export default function RegisterPage() {
             return;
         }
 
+        if (!showOtpInput) {
+            // First step: Generate OTP and send email
+            try {
+                const otpCode = generateVerificationCode();
+                setGeneratedOtp(otpCode);
+
+                const emailSent = await sendVerificationEmail({
+                    email,
+                    verificationCode: otpCode,
+                    name: name || email.split('@')[0]
+                });
+
+                if (emailSent) {
+                    setShowOtpInput(true);
+                    setMessage({
+                        type: 'success',
+                        text: lang === 'ja'
+                            ? '確認コードをメールで送信しました。コードを入力してください。'
+                            : 'Verification code sent to your email. Please enter the code below.'
+                    });
+                } else {
+                    setMessage({
+                        type: 'error',
+                        text: lang === 'ja' ? '確認メールの送信に失敗しました。' : 'Failed to send verification email.'
+                    });
+                }
+            } catch (error) {
+                console.error('Email sending error:', error);
+                setMessage({
+                    type: 'error',
+                    text: lang === 'ja' ? '確認メールの送信に失敗しました。' : 'Failed to send verification email.'
+                });
+            }
+            setLoading(false);
+            return;
+        }
+
+        // Second step: Verify OTP and create account
+        if (otp !== generatedOtp) {
+            setMessage({
+                type: 'error',
+                text: lang === 'ja' ? '確認コードが正しくありません。' : 'Invalid verification code.'
+            });
+            setLoading(false);
+            return;
+        }
+
         try {
             // Create user in Firebase Auth
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -50,9 +101,6 @@ export default function RegisterPage() {
                     displayName: name
                 });
             }
-
-            // Send email verification using Firebase's built-in service
-            await sendEmailVerification(user);
 
             // Send user data to API for server-side processing (if needed)
             const response = await fetch('/api/auth/register', {
@@ -71,18 +119,17 @@ export default function RegisterPage() {
             const data = await response.json();
 
             if (data.success) {
-                // Show email verification message and redirect to login
+                // Show success message and redirect to login
                 setMessage({
                     type: 'success',
                     text: lang === 'ja'
-                        ? 'アカウントが作成されました。メールアドレスを確認してログインしてください。'
-                        : 'Account created successfully. Please check your email and verify your account before logging in.'
+                        ? 'アカウントが正常に作成されました！ログインしてください。'
+                        : 'Account created successfully! Please log in.'
                 });
-                // Sign out user and redirect to login page after showing message
-                setTimeout(async () => {
-                    await auth.signOut();
+                // Redirect to login page after showing message
+                setTimeout(() => {
                     router.push(`/${lang}/login?message=RegistrationSuccess`);
-                }, 3000);
+                }, 2000);
             } else {
                 setMessage({ type: 'error', text: data.error });
             }
@@ -295,12 +342,29 @@ export default function RegisterPage() {
                     </button>
                 </div>
 
+                {showOtpInput && (
+                    <div>
+                        <label className="block text-sm font-medium mb-2">
+                            {lang === 'ja' ? '確認コード' : 'Verification Code'}
+                        </label>
+                        <input
+                            type="text"
+                            value={otp}
+                            onChange={(e) => setOtp(e.target.value)}
+                            required
+                            className="border rounded p-3 w-full text-base"
+                            placeholder={lang === 'ja' ? '6桁のコードを入力' : 'Enter 6-digit code'}
+                            maxLength={6}
+                        />
+                    </div>
+                )}
+
                 <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || (showOtpInput && otp.length !== 6)}
                     className="w-full bg-black text-white px-5 py-3 rounded text-base font-medium disabled:opacity-50"
                 >
-                    {loading ? '...' : t.submit}
+                    {loading ? '...' : showOtpInput ? (lang === 'ja' ? 'アカウント作成' : 'Create Account') : t.submit}
                 </button>
             </form>
 

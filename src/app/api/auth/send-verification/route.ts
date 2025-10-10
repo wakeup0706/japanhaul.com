@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
     console.log(`
       📧 VERIFICATION EMAIL SENT
 
+      From: ec-noreply@animetourism.co.jp
       To: ${name} <${email}>
       Subject: Verify your JapanHaul account
 

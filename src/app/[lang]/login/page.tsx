@@ -2,7 +2,7 @@
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
 export default function LoginPage() {
@@ -21,7 +21,6 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-    const [showResendVerification, setShowResendVerification] = useState(false);
 
     useEffect(() => {
         const message = searchParams.get('message');
@@ -44,17 +43,8 @@ export default function LoginPage() {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
-            // Check if email is verified
-            if (!user.emailVerified) {
-                setShowResendVerification(true);
-                setMessage({
-                    type: 'error',
-                    text: lang === 'ja'
-                        ? 'メールアドレスが確認されていません。メールを確認してアカウントを有効化してください。'
-                        : 'Email not verified. Please check your email and verify your account.'
-                });
-                return;
-            }
+            // Email verification is now handled during registration with OTP
+            // No need to check emailVerified status
 
             // Send user data to API for server-side processing (if needed)
             const response = await fetch('/api/auth/login', {
@@ -90,32 +80,6 @@ export default function LoginPage() {
         }
     };
 
-    const handleResendVerification = async () => {
-        setLoading(true);
-        try {
-            // Sign in again to get the current user
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
-
-            // Send verification email
-            await sendEmailVerification(user);
-
-            setMessage({
-                type: 'success',
-                text: lang === 'ja'
-                    ? '確認メールを再送信しました。メールを確認してください。'
-                    : 'Verification email sent again. Please check your email.'
-            });
-        } catch (error) {
-            console.error('Resend verification error:', error);
-            setMessage({
-                type: 'error',
-                text: lang === 'ja' ? '確認メールの再送信に失敗しました。' : 'Failed to resend verification email.'
-            });
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleGoogleSignIn = async () => {
         setLoading(true);
@@ -244,17 +208,6 @@ export default function LoginPage() {
                 </button>
             </form>
 
-            {showResendVerification && (
-                <div className="mt-4 text-center">
-                    <button
-                        onClick={handleResendVerification}
-                        disabled={loading}
-                        className="text-blue-600 underline hover:no-underline disabled:opacity-50"
-                    >
-                        {lang === 'ja' ? '確認メールを再送信' : 'Resend verification email'}
-                    </button>
-                </div>
-            )}
 
             <div className="mt-6 flex items-center justify-between text-base">
                 <Link href={`/${lang}/register`} className="underline hover:no-underline">{t.create}</Link>

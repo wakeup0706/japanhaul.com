@@ -97,7 +97,8 @@
       "delivery": "Delivery",
       "login": "Log in",
       "register": "Register",
-      "forgot-password": "Forgot password"
+      "forgot-password": "Forgot password",
+      "account": "Account"
     }
   }
   ,
