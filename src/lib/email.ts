@@ -1,5 +1,7 @@
-// Email service for sending verification codes
-// Note: In production, use a proper email service like SendGrid, Mailgun, or Firebase Functions
+// Email service for sending verification codes using EmailJS
+// EmailJS credentials are public by design - no security issues putting them in client code
+
+import emailjs from '@emailjs/browser';
 
 export interface EmailVerificationData {
   email: string;
@@ -9,18 +11,30 @@ export interface EmailVerificationData {
 
 export async function sendVerificationEmail(data: EmailVerificationData): Promise<boolean> {
   try {
-    // For demo purposes, we'll use a simple approach
-    // In production, replace this with your email service
+    // EmailJS configuration - these are public credentials by design
+    // Service ID, Template ID, and Public Key are meant to be exposed client-side
+    const serviceId = 'service_3n5yq85'; // Your Service ID
+    const templateId = 'template_z7sc9kf'; // Your Template ID
+    const publicKey = 'Fr5sN-PFKqzhJe8RQ'; // Your Public Key
 
-    const response = await fetch('/api/auth/send-verification', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
+    const templateParams = {
+      email: data.email,
+      from_name: data.name || 'User',
+      passcode: data.verificationCode,
+      to_name: data.name || 'User',
+      company_name: 'JapanHaul',
+      reply_to: 'noreply@japanhaul.com',
+    };
 
-    return response.ok;
+    // Send email using EmailJS (client-side)
+    const result = await emailjs.send(
+      serviceId,
+      templateId,
+      templateParams,
+      publicKey
+    );
+
+    return result.status === 200;
   } catch (error) {
     console.error('Failed to send verification email:', error);
     return false;
