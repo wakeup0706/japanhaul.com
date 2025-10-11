@@ -182,9 +182,9 @@ export class WebScraper {
                         const imageUrl = this.extractImageFromHtml($, element, config);
                         if (imageUrl) {
                             products[index].imageUrl = imageUrl;
-                            console.log('Added image URL for product', index, ':', imageUrl.substring(0, 100) + '...');
+                            console.log('✅ [DEBUG] Added image URL for product', index, ':', imageUrl);
                         } else {
-                            console.log('No image found for product', index);
+                            console.log('❌ [DEBUG] No image found for product', index);
                         }
                     }
                 });
@@ -208,7 +208,7 @@ export class WebScraper {
                             // Handle Shopify {width} placeholder in URLs
                             if (imgUrl.includes('{width}')) {
                                 imgUrl = imgUrl.replace('{width}', '800');
-                                console.log('Replaced {width} placeholder in fallback image:', imgUrl);
+                                console.log('🔄 [DEBUG] Replaced {width} placeholder in fallback image:', imgUrl);
                             }
 
                             // Use the first available image for all products as fallback
@@ -217,7 +217,7 @@ export class WebScraper {
                                     product.imageUrl = imgUrl && imgUrl.startsWith('http') ? imgUrl : `https://anime-store.jp${imgUrl || ''}`;
                                 }
                             });
-                            console.log('Applied fallback image to all products:', imgUrl);
+                            console.log('✅ [DEBUG] Applied fallback image to all products:', imgUrl);
                             break;
                         }
                     }
