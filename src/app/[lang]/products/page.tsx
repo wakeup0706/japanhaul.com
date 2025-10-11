@@ -21,10 +21,12 @@ export default function ProductsPage() {
 
     // State for dynamic products
     const [allProducts, setAllProducts] = useState<Product[]>(mockProducts);
+    const [loading, setLoading] = useState<boolean>(false);
 
     // Fetch scraped products on component mount
     useEffect(() => {
         const fetchProducts = async () => {
+            setLoading(true);
             try {
                 const products = await getAllProducts();
                 setAllProducts(products);
