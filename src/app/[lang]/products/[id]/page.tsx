@@ -34,12 +34,32 @@ export default function ProductDetail({ params }: { params: Promise<{ lang: stri
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-4">
                     <div className="lg:col-span-7 space-y-4">
                         <div className="aspect-square overflow-hidden rounded-xl border bg-white">
-                            <Image src="/placeholder.jpg" alt={product.title} width={1200} height={1200} className="h-full w-full object-cover" />
+                            <Image
+                                src={product.imageUrl || "/placeholder.jpg"}
+                                alt={product.title}
+                                width={1200}
+                                height={1200}
+                                className="h-full w-full object-cover"
+                                onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.src = "/placeholder.jpg";
+                                }}
+                            />
                         </div>
                         <div className="grid grid-cols-3 gap-4">
                             {[0,1,2].map((i) => (
                                 <div key={i} className="aspect-[4/3] overflow-hidden rounded-lg border bg-white">
-                                    <Image src="/placeholder.jpg" alt={`${product.title} ${i+1}`} width={600} height={450} className="h-full w-full object-cover" />
+                                    <Image
+                                        src={product.imageUrl || "/placeholder.jpg"}
+                                        alt={`${product.title} ${i+1}`}
+                                        width={600}
+                                        height={450}
+                                        className="h-full w-full object-cover"
+                                        onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            target.src = "/placeholder.jpg";
+                                        }}
+                                    />
                                 </div>
                             ))}
                         </div>
@@ -56,7 +76,28 @@ export default function ProductDetail({ params }: { params: Promise<{ lang: stri
                         </div>
                     </div>
                     <div className="lg:col-span-5">
-                        <h1 className="text-3xl font-bold mb-2">{product.title}</h1>
+                        <div className="flex items-start justify-between mb-2">
+                            <h1 className="text-3xl font-bold">{product.title}</h1>
+                            <div className="flex flex-col gap-1 ml-4">
+                                {product.labels?.map((label, index) => (
+                                    <span
+                                        key={index}
+                                        className={`px-2 py-1 text-xs rounded-full font-semibold text-white ${
+                                            label === 'Sold' ? 'bg-gray-600' :
+                                            label === 'Used' ? 'bg-orange-500' :
+                                            'bg-blue-500'
+                                        }`}
+                                    >
+                                        {label}
+                                    </span>
+                                ))}
+                                {product.isSoldOut && (
+                                    <span className="px-2 py-1 text-xs rounded-full font-semibold text-white bg-gray-600">
+                                        Sold
+                                    </span>
+                                )}
+                            </div>
+                        </div>
                         <div className="text-lg mb-2 flex items-center gap-2">
                             <span className={`${product.compareAt ? "text-rose-600 font-semibold" : "text-black font-semibold"}`}>{formatPrice(product.price)}</span>
                             {product.compareAt && (
@@ -91,7 +132,17 @@ export default function ProductDetail({ params }: { params: Promise<{ lang: stri
                         {products.slice(0,4).map((p) => (
                             <Link key={p.id} href={`/${lang}/products/${p.id}`} className="group block">
                                 <div className="aspect-[4/3] overflow-hidden rounded-lg border bg-white">
-                                    <Image src="/placeholder.jpg" alt={p.title} width={600} height={450} className="h-full w-full object-cover group-hover:scale-105 transition" />
+                                    <Image
+                                        src={p.imageUrl || "/placeholder.jpg"}
+                                        alt={p.title}
+                                        width={600}
+                                        height={450}
+                                        className="h-full w-full object-cover group-hover:scale-105 transition"
+                                        onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            target.src = "/placeholder.jpg";
+                                        }}
+                                    />
                                 </div>
                                 <div className="mt-2 text-sm">
                                     <div className="font-medium group-hover:underline">{p.title}</div>
@@ -127,7 +178,7 @@ export default function ProductDetail({ params }: { params: Promise<{ lang: stri
                                 <span className="px-3 min-w-[2rem] text-center">{qty}</span>
                                 <button className="h-6 w-6 inline-flex items-center justify-center rounded-full hover:bg-gray-100" onClick={() => setQty(qty+1)}>+</button>
                             </div>
-                            <AddToCartButton id={product.id} title={product.title} price={product.price} label={t("addToCart")} image="/placeholder.jpg" />
+                            <AddToCartButton id={product.id} title={product.title} price={product.price} label={t("addToCart")} image={product.imageUrl || "/placeholder.jpg"} />
                         </div>
                     </div>
                 </div>

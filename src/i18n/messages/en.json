@@ -98,7 +98,9 @@
       "login": "Log in",
       "register": "Register",
       "forgot-password": "Forgot password",
-      "account": "Account"
+      "account": "Account",
+      "admin": "Admin",
+      "scraping": "Scraping"
     }
   }
   ,

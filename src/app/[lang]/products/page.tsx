@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { products as allProducts, brands, types, Product } from "@/app/_data/products";
-import { useMemo, useState } from "react";
+import { products as hardcodedProducts, brands, types, Product, getAllProducts } from "@/app/_data/products";
+import { useMemo, useState, useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
-const mockProducts: Product[] = allProducts;
+const mockProducts: Product[] = hardcodedProducts;
 
 export default function ProductsPage() {
     const t = useTranslations();
@@ -18,6 +18,29 @@ export default function ProductsPage() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const lang = (pathname || "/").split("/").filter(Boolean)[0] === "ja" ? "ja" : "en";
+
+    // State for dynamic products
+    const [allProducts, setAllProducts] = useState<Product[]>(mockProducts);
+    const [loading, setLoading] = useState(false);
+
+    // Fetch scraped products on component mount
+    useEffect(() => {
+        const fetchProducts = async () => {
+            setLoading(true);
+            try {
+                const products = await getAllProducts();
+                setAllProducts(products);
+            } catch (error) {
+                console.error('Error fetching products:', error);
+                // Keep using hardcoded products as fallback
+                setAllProducts(mockProducts);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProducts();
+    }, []);
 
     const formatPrice = (amount: number) =>
         new Intl.NumberFormat(lang === "ja" ? "ja-JP" : "en-US", {
@@ -92,7 +115,7 @@ export default function ProductsPage() {
     const query = (searchParams.get("q") || "").toLowerCase();
 
     const filtered = useMemo(() => {
-        const base = mockProducts.filter((p) => {
+        const base = allProducts.filter((p) => {
             if (query && !p.title.toLowerCase().includes(query)) return false;
             if (p.price < priceMin || p.price > priceMax) return false;
             if (selectedAvailability.size > 0 && !selectedAvailability.has(p.availability)) return false;
@@ -295,24 +318,54 @@ export default function ProductsPage() {
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M21.75 12c0-1.6-3.9-6.75-9.75-6.75S2.25 10.4 2.25 12c0 1.6 3.9 6.75 9.75 6.75S21.75 13.6 21.75 12Zm-6.5 0a3.25 3.25 0 1 1-6.5 0 3.25 3.25 0 0 1 6.5 0Z" clipRule="evenodd"/></svg>
                                     </button>
-                                    {p.compareAt && (
-                                        <div className="absolute left-2 top-2 rounded-full bg-red-500 px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm">-{Math.round(((p.compareAt - p.price) / p.compareAt) * 100)}%</div>
-                                    )}
+                                    {/* Labels */}
+                                    <div className="absolute left-2 top-2 flex flex-col gap-1">
+                                        {p.compareAt && (
+                                            <div className="rounded-full bg-red-500 px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm">
+                                                -{Math.round(((p.compareAt - p.price) / p.compareAt) * 100)}%
+                                            </div>
+                                        )}
+                                        {p.labels?.map((label, index) => (
+                                            <div
+                                                key={index}
+                                                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm ${
+                                                    label === 'Sold' ? 'bg-gray-600' :
+                                                    label === 'Used' ? 'bg-orange-500' :
+                                                    'bg-blue-500'
+                                                }`}
+                                            >
+                                                {label}
+                                            </div>
+                                        ))}
+                                        {p.isSoldOut && (
+                                            <div className="rounded-full bg-gray-600 px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm">
+                                                Sold
+                                            </div>
+                                        )}
+                                    </div>
                                     {/* Base image */}
                                     <Image
-                                        src="/placeholder.jpg"
+                                        src={p.imageUrl || "/placeholder.jpg"}
                                         alt={p.title}
                                         width={600}
                                         height={450}
                                         className="h-full w-full object-cover object-center transition-transform duration-500 ease-out group-hover:scale-105"
+                                        onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            target.src = "/placeholder.jpg";
+                                        }}
                                     />
                                     {/* Hover image (crossfade) */}
                                     <Image
-                                        src="/placeholder_alt.jpg"
+                                        src={p.imageUrl || "/placeholder_alt.jpg"}
                                         alt={`${p.title} alt`}
                                         width={600}
                                         height={450}
                                         className="absolute inset-0 h-full w-full object-cover object-center opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100 pointer-events-none"
+                                        onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            target.src = "/placeholder_alt.jpg";
+                                        }}
                                     />
                                 </div>
                                 <div className="mt-2 text-sm leading-tight">
@@ -343,7 +396,17 @@ export default function ProductsPage() {
                         </div>
                         <div className="overflow-y-auto p-4 space-y-4">
                             <div className="aspect-[4/3] w-full overflow-hidden rounded-lg border bg-gray-50">
-                                <Image src="/placeholder.jpg" alt={quickView.title} width={900} height={675} className="h-full w-full object-cover" />
+                                <Image
+                                    src={quickView.imageUrl || "/placeholder.jpg"}
+                                    alt={quickView.title}
+                                    width={900}
+                                    height={675}
+                                    className="h-full w-full object-cover"
+                                    onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.src = "/placeholder.jpg";
+                                    }}
+                                />
                             </div>
                             <div>
                                 <div className="flex items-center gap-2 text-lg">

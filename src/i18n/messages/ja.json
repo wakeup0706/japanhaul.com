@@ -92,7 +92,9 @@
       "login": "ログイン",
       "register": "登録",
       "forgot-password": "パスワードをお忘れの方",
-      "account": "アカウント"
+      "account": "アカウント",
+      "admin": "管理者",
+      "scraping": "スクレイピング"
     }
   },
   "products": {
