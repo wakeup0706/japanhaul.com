@@ -153,3 +153,72 @@ export function removeWebsite(name: string): void {
         WEBSITE_CONFIGS.splice(index, 1);
     }
 }
+
+// Scraping configurations mapping for API routes
+export const scrapingConfigs = {
+    generic: (baseUrl: string): ScrapingConfig => ({
+        url: baseUrl,
+        selectors: {
+            productList: '.products, .product-list, [class*="product"]',
+            productCard: '.product, article, [class*="product"]',
+            title: 'h1, h2, h3, .title, [class*="title"]',
+            price: '.price, [class*="price"]',
+            originalPrice: '.original-price, .compare-price, [class*="compare"]',
+            image: 'img, [class*="image"]',
+            description: '.description, [class*="description"]',
+            availability: '.availability, .stock, [class*="stock"]',
+        },
+        pagination: {
+            nextPageSelector: '.next, [rel="next"], .pagination a:last-child',
+            maxPages: 3,
+        },
+    }),
+    animeStore: (baseUrl: string): ScrapingConfig => ({
+        url: baseUrl,
+        selectors: {
+            productList: '.collection-products, .product-collection',
+            productCard: '.product-collection',
+            title: '.product-collection__title',
+            price: '.product-collection__price',
+            image: '.product-collection__image img, .rimage__img, [data-master], [srcset]',
+            description: '.product-collection__content',
+        },
+    }),
+    amnibus: (baseUrl: string): ScrapingConfig => ({
+        url: baseUrl,
+        selectors: {
+            productList: '.product-list, .list-container, main',
+            productCard: 'a[href*="/products/detail/"]',
+            title: '.list-name',
+            price: '.list-price',
+            image: '.list-image img',
+            description: '.list-description',
+        },
+        pagination: {
+            nextPageSelector: 'a[href*="pageno="], .pagination a, .next',
+            maxPages: 3
+        }
+    }),
+    amazon: (baseUrl: string): ScrapingConfig => ({
+        url: baseUrl,
+        selectors: {
+            productList: '#search .s-main-slot, .s-results',
+            productCard: '.s-result-item, .a-section',
+            title: 'h2 a span, .a-text-normal',
+            price: '.a-price .a-offscreen, .a-color-price',
+            originalPrice: '.a-price .a-text-price',
+            image: '.a-dynamic-image, img',
+            description: '.a-text-normal',
+        },
+    }),
+    ebay: (baseUrl: string): ScrapingConfig => ({
+        url: baseUrl,
+        selectors: {
+            productList: '.s-item',
+            productCard: '.s-item',
+            title: '.s-item__title',
+            price: '.s-item__price',
+            image: '.s-item__image img',
+        },
+    }),
+};
