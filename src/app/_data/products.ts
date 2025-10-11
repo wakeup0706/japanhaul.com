@@ -35,6 +35,7 @@ export const products: Product[] = Array.from({ length: 48 }).map((_, i) => {
         brand: brands[i % brands.length],
         type: types[i % types.length],
         availability: i % 7 === 0 ? "out" : "in",
+        sourceUrl: `/products/p${i + 1}`,
     };
 });
 
