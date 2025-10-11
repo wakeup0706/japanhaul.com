@@ -65,7 +65,7 @@ export async function getScrapedProducts(): Promise<Product[]> {
         scrapedProductsCache = data.products || [];
         lastFetchTime = Date.now();
 
-        return scrapedProductsCache;
+        return scrapedProductsCache || [];
     } catch (error) {
         console.error('Error fetching scraped products:', error);
         return [];
