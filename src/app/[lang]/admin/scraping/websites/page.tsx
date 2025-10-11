@@ -31,7 +31,7 @@ export default function WebsiteManagementPage() {
 
                     const data = await response.json();
                     setIsAuthenticated(data.isAdmin || false);
-                } catch (error) {
+                } catch {
                     setIsAuthenticated(false);
                 }
             } else {

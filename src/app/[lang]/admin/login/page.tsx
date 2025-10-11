@@ -41,7 +41,7 @@ export default function AdminLoginPage() {
                 // They'll be redirected back to the main page
                 router.push('/');
             }
-        } catch (error) {
+        } catch {
             setIsAuthenticated(false);
             setError('Error checking admin access');
         }

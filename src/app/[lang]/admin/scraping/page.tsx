@@ -48,7 +48,7 @@ export default function ScrapingAdminPage() {
 
                     const data = await response.json();
                     setIsAuthenticated(data.isAdmin || false);
-                } catch (error) {
+                } catch {
                     setIsAuthenticated(false);
                 }
             } else {
@@ -100,7 +100,7 @@ export default function ScrapingAdminPage() {
             if (showCustomConfig && customConfig) {
                 try {
                     requestBody.customConfig = JSON.parse(customConfig);
-                } catch (error) {
+                } catch {
                     setScrapingResult({
                         success: false,
                         error: 'Invalid JSON in custom configuration'
