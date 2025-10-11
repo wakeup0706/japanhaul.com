@@ -1,8 +1,11 @@
 // Web scraping utilities for extracting product data from websites
 // Note: You'll need to install cheerio and axios first: npm install cheerio axios
 
-// Cheerio types are not available in this version, using any for now
-// TODO: Update to proper cheerio types when available
+// Type definitions for cheerio and axios since proper types aren't available
+type CheerioAPI = any;
+type CheerioStatic = any;
+type AxiosInstance = any;
+type Element = any;
 
 export interface ScrapedProduct {
     id: string;
@@ -60,8 +63,8 @@ export interface ScrapingConfig {
 }
 
 export class WebScraper {
-    private axios: any;
-    private cheerio: any;
+    private axios: AxiosInstance;
+    private cheerio: CheerioStatic;
 
     constructor() {
         // Dynamic imports to avoid issues if dependencies aren't installed yet
@@ -216,12 +219,12 @@ export class WebScraper {
     /**
      * Extract products from JSON-LD structured data
      */
-    private extractFromJsonLd($: any, sourceUrl: string, htmlContent: string): ScrapedProduct[] {
+    private extractFromJsonLd($: CheerioAPI, sourceUrl: string, htmlContent: string): ScrapedProduct[] {
         const products: ScrapedProduct[] = [];
 
         try {
             // Find all JSON-LD script tags
-            $('script[type="application/ld+json"]').each((index: number, element: any) => {
+            $('script[type="application/ld+json"]').each((index: number, element: Element) => {
                 try {
                     const jsonText = $(element).html();
                     if (!jsonText) return;
@@ -255,7 +258,7 @@ export class WebScraper {
     /**
      * Parse a single JSON-LD Product object into our ScrapedProduct format
      */
-    private parseJsonLdProduct(jsonLdItem: any, sourceUrl: string, htmlContent: string): ScrapedProduct | null {
+    private parseJsonLdProduct(jsonLdItem: JsonLdProduct, sourceUrl: string, htmlContent: string): ScrapedProduct | null {
         try {
             // Extract basic product information
             const name = jsonLdItem.name || '';
@@ -473,7 +476,7 @@ export class WebScraper {
     /**
      * Extract image URL from HTML element
      */
-    private extractImageFromHtml($: any, element: any, config: ScrapingConfig): string | undefined {
+    private extractImageFromHtml($: CheerioAPI, element: any, config: ScrapingConfig): string | undefined {
         try {
             // Try different image selectors with priority order
             const imageSelectors = [
@@ -564,7 +567,7 @@ export class WebScraper {
     /**
      * Extract product data from a single product element
      */
-    private extractProductData($: any, element: any, config: ScrapingConfig, index: number): ScrapedProduct | null {
+    private extractProductData($: CheerioAPI, element: any, config: ScrapingConfig, index: number): ScrapedProduct | null {
         try {
             const titleElement = $(element).find(config.selectors.title || 'h1, h2, h3, .title, [class*="title"]');
             const title = titleElement.first().text().trim();
@@ -666,7 +669,7 @@ export class WebScraper {
     /**
      * Detect product condition, sold out status, and used items
      */
-    private detectProductCondition($: any, element: any, title: string, description?: string): {
+    private detectProductCondition($: CheerioAPI, element: any, title: string, description?: string): {
         availability: 'in' | 'out';
         condition?: "new" | "used" | "refurbished";
         isSoldOut?: boolean;

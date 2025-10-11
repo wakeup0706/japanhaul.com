@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { WebScraper, ScrapingConfig, scrapingConfigs } from '@/lib/scraper';
-import type { ScrapedProduct } from '@/lib/scraper';
 
 // POST /api/scrape - Scrape products from a website
 export async function POST(request: NextRequest) {

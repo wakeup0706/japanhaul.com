@@ -1,13 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
 export default function AdminLoginPage() {
-    const t = useTranslations();
     const router = useRouter();
     const searchParams = useSearchParams();
     const [email, setEmail] = useState("");
@@ -31,7 +29,7 @@ export default function AdminLoginPage() {
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [checkAdminAccess]);
 
     // Redirect logic based on authentication state
     useEffect(() => {
@@ -56,7 +54,7 @@ export default function AdminLoginPage() {
         );
     }
 
-    const checkAdminAccess = async (uid: string, email: string | null) => {
+    const checkAdminAccess = useCallback(async (uid: string, email: string | null) => {
         try {
             // Check if user has admin privileges
             // You can customize this logic based on your requirements
@@ -84,7 +82,7 @@ export default function AdminLoginPage() {
             setIsAuthenticated(false);
             setError('Error checking admin access');
         }
-    };
+    }, [router, redirectTo]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -93,31 +91,12 @@ export default function AdminLoginPage() {
 
         try {
             // Sign in with Firebase Auth
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
+            await signInWithEmailAndPassword(auth, email, password);
 
             // Check admin access will be handled by the useEffect above
         } catch (error) {
             console.error('Login error:', error);
             setError(error instanceof Error ? error.message : 'Login failed');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleGoogleSignIn = async () => {
-        setIsLoading(true);
-        setError("");
-
-        try {
-            const provider = new GoogleAuthProvider();
-            const result = await signInWithPopup(auth, provider);
-            const user = result.user;
-
-            // Check admin access will be handled by the useEffect above
-        } catch (error) {
-            console.error('Google sign-in error:', error);
-            setError(error instanceof Error ? error.message : 'Google sign-in failed');
         } finally {
             setIsLoading(false);
         }

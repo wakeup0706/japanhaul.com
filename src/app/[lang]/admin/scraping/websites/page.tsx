@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { WebsiteConfig, WEBSITE_CONFIGS, getEnabledWebsites, getWebsitesNeedingUpdate } from "@/lib/scraping-config";
@@ -13,10 +12,8 @@ export default function WebsiteManagementPage() {
     const { lang: rawLang } = useParams<{ lang: string }>();
     const lang = rawLang === "ja" ? "ja" : "en";
     const router = useRouter();
-    const t = useTranslations();
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
     const [websites, setWebsites] = useState<WebsiteConfig[]>(WEBSITE_CONFIGS);
-    const [editingWebsite, setEditingWebsite] = useState<WebsiteConfig | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [lastScrapeResults, setLastScrapeResults] = useState<{ success: boolean; totalProducts?: number; websitesUpdated?: number; error?: string } | null>(null);
 
@@ -244,7 +241,7 @@ export default function WebsiteManagementPage() {
                         <p><strong>1. Configure Websites:</strong> Edit <code>src/lib/scraping-config.ts</code> to add your target websites</p>
                         <p><strong>2. Set Up Cron Job:</strong> Run <code>node scripts/setup-cron.js</code> to enable automated scraping</p>
                         <p><strong>3. Monitor Logs:</strong> Check <code>logs/scraping.log</code> for scraping activity</p>
-                        <p><strong>4. Manual Scraping:</strong> Use "Scrape All Now" button for immediate updates</p>
+                        <p><strong>4. Manual Scraping:</strong> Use &quot;Scrape All Now&quot; button for immediate updates</p>
                     </div>
                 </div>
             </div>

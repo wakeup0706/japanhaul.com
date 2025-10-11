@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import type { ScrapedProduct } from "@/lib/scraper";
@@ -24,7 +23,6 @@ interface ScrapedProductsResponse {
 export default function ScrapingAdminPage() {
     const { lang: rawLang } = useParams<{ lang: string }>();
     const lang = rawLang === "ja" ? "ja" : "en";
-    const t = useTranslations();
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
     const [url, setUrl] = useState("");
     const [configType, setConfigType] = useState("generic");
