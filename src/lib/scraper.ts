@@ -216,8 +216,8 @@ export class WebScraper {
 
             return products;
                         } catch (_error) {
-            console.error(`Error scraping ${config.url}:`, error);
-            throw new Error(`Failed to scrape products: ${error}`);
+            console.error(`Error scraping ${config.url}:`, _error);
+            throw new Error(`Failed to scrape products: ${_error}`);
         }
     }
 
@@ -254,7 +254,7 @@ export class WebScraper {
                 }
             });
                         } catch (_error) {
-            console.warn('Error extracting from JSON-LD:', error);
+            console.warn('Error extracting from JSON-LD:', _error);
         }
 
         return products;
@@ -448,7 +448,7 @@ export class WebScraper {
                 condition: this.detectConditionFromText(name + ' ' + description),
             };
                         } catch (_error) {
-            console.warn('Error parsing JSON-LD product:', error);
+            console.warn('Error parsing JSON-LD product:', _error);
             return null;
         }
     }
