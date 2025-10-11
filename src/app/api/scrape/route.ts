@@ -86,10 +86,49 @@ export async function POST(request: NextRequest) {
 
     } catch (error) {
         console.error('Scraping error:', error);
+        console.error('Error details:', {
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+            cause: error instanceof Error && 'cause' in error ? (error as any).cause : undefined
+        });
+
+        // Handle specific error types
+        if (error instanceof Error) {
+            if (error.message.includes('Missing scraping dependencies')) {
+                return NextResponse.json(
+                    {
+                        error: 'Scraping dependencies not installed',
+                        details: 'Please ensure cheerio and axios are installed'
+                    },
+                    { status: 500 }
+                );
+            }
+
+            if (error.message.includes('timeout')) {
+                return NextResponse.json(
+                    {
+                        error: 'Request timeout',
+                        details: 'The website took too long to respond'
+                    },
+                    { status: 408 }
+                );
+            }
+
+            if (error.message.includes('ECONNREFUSED') || error.message.includes('ENOTFOUND')) {
+                return NextResponse.json(
+                    {
+                        error: 'Website not accessible',
+                        details: 'Could not connect to the target website'
+                    },
+                    { status: 502 }
+                );
+            }
+        }
+
         return NextResponse.json(
             {
                 error: 'Failed to scrape products',
-                details: error instanceof Error ? error.message : 'Unknown error'
+                details: error instanceof Error ? error.message : 'Unknown error occurred'
             },
             { status: 500 }
         );

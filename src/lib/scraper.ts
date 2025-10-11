@@ -98,6 +98,8 @@ export class WebScraper {
 
         try {
             console.log('🔍 [DEBUG] Making HTTP request to:', config.url);
+            console.log('🔍 [DEBUG] Using selectors:', config.selectors);
+
             // Randomize headers to avoid detection
             const userAgents = [
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -129,6 +131,12 @@ export class WebScraper {
             console.log('🔍 [DEBUG] HTTP request took:', new Date().toISOString());
 
             const $ = this.cheerio.load(response.data);
+            console.log('🔍 [DEBUG] HTML loaded, length:', response.data.length);
+
+            // Debug: Check what elements are available on the page
+            const bodyText = $('body').text();
+            console.log('🔍 [DEBUG] Body text length:', bodyText.length);
+
             const products: ScrapedProduct[] = [];
 
             // First, try to extract products from JSON-LD structured data
@@ -143,20 +151,59 @@ export class WebScraper {
                 let productElements;
                 if (config.selectors.productList) {
                     const productListElement = $(config.selectors.productList);
+                    console.log('🔍 [DEBUG] Found', productListElement.length, 'elements with productList selector:', config.selectors.productList);
                     productElements = config.selectors.productCard
                         ? productListElement.find(config.selectors.productCard)
                         : productListElement.children();
+                    console.log('🔍 [DEBUG] Found', productElements.length, 'product elements within productList');
                 } else {
                     // Otherwise, look for product cards directly
                     productElements = $(config.selectors.productCard || '.product, [class*="product"], article');
+                    console.log('🔍 [DEBUG] Found', productElements.length, 'product elements with selector:', config.selectors.productCard);
                 }
 
                 productElements.each((index: number, element: cheerio.Element) => {
                     const product = this.extractProductData($, element, config, index);
                     if (product) {
                         products.push(product);
+                        console.log('✅ [DEBUG] Successfully extracted product:', product.title?.substring(0, 50) + '...');
+                    } else {
+                        console.log('❌ [DEBUG] Failed to extract product from element', index);
                     }
                 });
+
+                // If still no products found, try a more generic approach
+                if (products.length === 0) {
+                    console.log('🔄 [DEBUG] No products found with specific selectors, trying generic approach...');
+
+                    // Try to find any elements that might be products
+                    const genericProductElements = $(
+                        'div[class*="product"], div[class*="item"], article, ' +
+                        'a[href*="product"], a[href*="item"], ' +
+                        '[class*="card"], [class*="grid"] > *'
+                    );
+
+                    console.log('🔍 [DEBUG] Found', genericProductElements.length, 'elements with generic selectors');
+
+                    // Limit to first 20 elements to avoid performance issues
+                    genericProductElements.slice(0, 20).each((index: number, element: cheerio.Element) => {
+                        const product = this.extractProductData($, element, { ...config, selectors: {
+                            ...config.selectors,
+                            title: 'h1, h2, h3, h4, h5, h6, .title, [class*="title"], .name, [class*="name"]',
+                            price: '.price, [class*="price"], .amount, [class*="amount"], .cost, [class*="cost"]',
+                            image: 'img, [class*="image"] img, [data-src], [data-lazy]',
+                        }}, index);
+
+                        if (product && product.title && product.title.length > 0) {
+                            products.push(product);
+                            console.log('✅ [DEBUG] Found product with generic extraction:', product.title?.substring(0, 50) + '...');
+                            if (products.length >= 5) { // Limit to 5 products from generic search
+                                console.log('🔍 [DEBUG] Reached limit of 5 products from generic search');
+                                return false; // Break out of the loop
+                            }
+                        }
+                    });
+                }
             }
 
             // If we got products from JSON-LD but they don't have images, try to extract from HTML
@@ -238,7 +285,13 @@ export class WebScraper {
             return products;
                         } catch (_error) {
             console.error(`Error scraping ${config.url}:`, _error);
-            throw new Error(`Failed to scrape products: ${_error}`);
+            console.error('Error details:', {
+                message: _error instanceof Error ? _error.message : String(_error),
+                stack: _error instanceof Error ? _error.stack : undefined,
+                url: config.url,
+                selectors: config.selectors
+            });
+            throw new Error(`Failed to scrape products from ${config.url}: ${_error instanceof Error ? _error.message : String(_error)}`);
         }
     }
 
@@ -972,6 +1025,23 @@ export const scrapingConfigs = {
             image: '.product-collection__image img, .rimage__img, [data-master], [srcset]',
             description: '.product-collection__content',
         },
+    }),
+
+    // Configuration for Amnibus
+    amnibus: (baseUrl: string): ScrapingConfig => ({
+        url: baseUrl,
+        selectors: {
+            productList: '.product-list, .list-container, main, .products, .items, [class*="product"]',
+            productCard: 'a[href*="/products/detail/"], .product-item, .item, [class*="product"], article',
+            title: '.list-name, .product-title, .title, h1, h2, h3, [class*="title"]',
+            price: '.list-price, .price, .amount, [class*="price"]',
+            image: '.list-image img, .product-image img, img, [class*="image"]',
+            description: '.list-description, .description, .summary, [class*="description"]',
+        },
+        pagination: {
+            nextPageSelector: 'a[href*="pageno="], .pagination a, .next, [rel="next"]',
+            maxPages: 3
+        }
     }),
 
     // Configuration for Amazon-style sites
