@@ -92,9 +92,11 @@ export class WebScraper {
      * Scrape products from a single page
      */
     async scrapeProducts(config: ScrapingConfig): Promise<ScrapedProduct[]> {
+        console.log('🔍 [DEBUG] scrapeProducts called with config:', config.url);
         await this.loadDependencies();
 
         try {
+            console.log('🔍 [DEBUG] Making HTTP request to:', config.url);
             // Randomize headers to avoid detection
             const userAgents = [
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -118,8 +120,11 @@ export class WebScraper {
                     'Cache-Control': 'no-cache',
                     'Pragma': 'no-cache',
                 },
-                timeout: 60000,
+                timeout: 120000,
             });
+
+            console.log('🔍 [DEBUG] HTTP request completed, status:', response.status);
+            console.log('🔍 [DEBUG] Response data length:', response.data?.length || 'unknown');
 
             const $ = this.cheerio.load(response.data);
             const products: ScrapedProduct[] = [];
@@ -810,7 +815,7 @@ export class WebScraper {
 
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const response = await (this.axios as { get: (url: string, config: { timeout: number; headers: Record<string, string> }) => Promise<any> }).get(currentUrl, {
-                        timeout: 60000,
+                        timeout: 120000,
                         headers: {
                             'User-Agent': randomPaginationUserAgent,
                             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
