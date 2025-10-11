@@ -82,7 +82,7 @@ export class WebScraper {
             const cheerio = await import('cheerio');
             this.axios = axios.default || axios;
             this.cheerio = cheerio;
-        } catch (error) {
+        } catch (_error) {
             console.error('Scraping dependencies not installed. Run: npm install cheerio axios');
             throw new Error('Missing scraping dependencies. Please install cheerio and axios.');
         }
@@ -215,7 +215,7 @@ export class WebScraper {
             console.log(`Scraping completed: ${products.length} products, ${productsWithImages} with images, ${productsWithoutImages} without images`);
 
             return products;
-        } catch (error) {
+                        } catch (_error) {
             console.error(`Error scraping ${config.url}:`, error);
             throw new Error(`Failed to scrape products: ${error}`);
         }
@@ -253,7 +253,7 @@ export class WebScraper {
                     console.warn('Failed to parse JSON-LD:', parseError);
                 }
             });
-        } catch (error) {
+                        } catch (_error) {
             console.warn('Error extracting from JSON-LD:', error);
         }
 
@@ -307,7 +307,7 @@ export class WebScraper {
                     try {
                         const sourceUrlObj = new URL(sourceUrl);
                         imageUrl = new URL(imageUrl, sourceUrlObj.origin).href;
-                    } catch (error) {
+                    } catch (_error) {
                         console.warn('Failed to convert relative image URL:', imageUrl);
                     }
                 }
@@ -362,7 +362,7 @@ export class WebScraper {
                                 try {
                                     const sourceUrlObj = new URL(sourceUrl);
                                     imageUrl = new URL(imageUrl, sourceUrlObj.origin).href;
-                                } catch (error) {
+                                } catch (_error) {
                                     console.warn('Failed to convert relative image URL:', imageUrl);
                                 }
                             }
@@ -404,7 +404,7 @@ export class WebScraper {
                                 try {
                                     const sourceUrlObj = new URL(sourceUrl);
                                     imageUrl = new URL(imageUrl, sourceUrlObj.origin).href;
-                                } catch (error) {
+                                } catch (_error) {
                                     console.warn('Failed to convert relative image URL:', imageUrl);
                                 }
                             }
@@ -447,7 +447,7 @@ export class WebScraper {
                 sourceUrl,
                 condition: this.detectConditionFromText(name + ' ' + description),
             };
-        } catch (error) {
+                        } catch (_error) {
             console.warn('Error parsing JSON-LD product:', error);
             return null;
         }
@@ -548,7 +548,7 @@ export class WebScraper {
                                         const absoluteUrl = new URL(finalUrl, sourceUrlObj.origin).href;
                                         console.log('Found image URL:', absoluteUrl);
                                         return absoluteUrl;
-                                    } catch (error) {
+                                    } catch (_error) {
                                         console.warn('Failed to convert relative image URL:', finalUrl);
                                     }
                                 } else {
@@ -563,8 +563,8 @@ export class WebScraper {
 
             console.log('No image found in element:', $(element).html().substring(0, 200) + '...');
             return undefined;
-        } catch (error) {
-            console.warn('Error extracting image from HTML:', error);
+                        } catch (_error) {
+            console.warn('Error extracting image from HTML:', _error);
             return undefined;
         }
     }
@@ -629,7 +629,7 @@ export class WebScraper {
                 if (imageUrl && !imageUrl.startsWith('http')) {
                     try {
                         imageUrl = new URL(imageUrl, config.url).href;
-                    } catch (error) {
+                    } catch (_error) {
                         console.warn('Failed to convert relative image URL:', imageUrl);
                     }
                 }
@@ -665,8 +665,8 @@ export class WebScraper {
                 isSoldOut,
                 labels,
             };
-        } catch (error) {
-            console.error('Error extracting product data:', error);
+                        } catch (_error) {
+            console.error('Error extracting product data:', _error);
             return null;
         }
     }
@@ -826,21 +826,21 @@ export class WebScraper {
                     console.log(`⏱️ [DEBUG] Waiting 3 seconds before next page...`);
                     await new Promise(resolve => setTimeout(resolve, 3000));
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error(`❌ [DEBUG] Error scraping page ${pageCount + 1}/${maxPages} (${currentUrl}):`, error);
 
                 // Check if it's a timeout error
-                if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+                if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
                     console.error(`⏱️ [DEBUG] TIMEOUT ERROR: Page ${pageCount + 1} timed out after 150 seconds`);
                     console.error(`⏱️ [DEBUG] This suggests the page is extremely slow to respond`);
-                } else if (error.response?.status === 403) {
+                } else if (error?.response?.status === 403) {
                     console.error(`🚫 [DEBUG] BLOCKED: Page ${pageCount + 1} returned 403 Forbidden`);
                     console.error(`🚫 [DEBUG] This suggests server-side blocking`);
-                } else if (error.response?.status === 429) {
+                } else if (error?.response?.status === 429) {
                     console.error(`🚦 [DEBUG] RATE LIMITED: Page ${pageCount + 1} returned 429 Too Many Requests`);
                     console.error(`🚦 [DEBUG] This suggests rate limiting`);
                 } else {
-                    console.error(`❓ [DEBUG] UNKNOWN ERROR: Page ${pageCount + 1} failed with:`, error.message);
+                    console.error(`❓ [DEBUG] UNKNOWN ERROR: Page ${pageCount + 1} failed with:`, error?.message || error);
                 }
 
                 console.error(`❌ [DEBUG] Previous pages worked, this specific page failed`);
@@ -945,7 +945,7 @@ export async function testScrapingConfig(config: ScrapingConfig): Promise<{ succ
             success: true,
             sampleProducts: products.slice(0, 3), // Return first 3 products as sample
         };
-    } catch (error) {
+                        } catch (_error) {
         return {
             success: false,
             error: error instanceof Error ? error.message : 'Unknown error occurred',
