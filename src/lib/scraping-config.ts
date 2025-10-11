@@ -86,6 +86,30 @@ export const WEBSITE_CONFIGS: WebsiteConfig[] = [
             intervalMinutes: 30
         }
     }
+    {
+        name: "Amnibus",
+        url: "https://amnibus.com/products/list",
+        enabled: true,
+        scrapingConfig: {
+            url: "https://amnibus.com/products/list",
+            selectors: {
+                productList: '.product-list, .list-container, main',
+                productCard: 'a[href*="/products/detail/"]',
+                title: '.list-name',
+                price: '.list-price',
+                image: '.list-image img',
+                description: '.list-description',
+            },
+            pagination: {
+                nextPageSelector: 'a[href*="pageno="], .pagination a, .next',
+                maxPages: 3
+            }
+        },
+        schedule: {
+            enabled: true,
+            intervalMinutes: 30
+        }
+    },
     // Add more websites as needed
 ];
 
