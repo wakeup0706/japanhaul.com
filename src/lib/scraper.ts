@@ -820,8 +820,30 @@ export class WebScraper {
 
                 pageCount++;
                 console.log(`📊 [DEBUG] Completed page ${pageCount}/${maxPages}`);
+
+                // Add delay between requests to avoid overwhelming the server
+                if (pageCount < maxPages && currentUrl) {
+                    console.log(`⏱️ [DEBUG] Waiting 3 seconds before next page...`);
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                }
             } catch (error) {
-                console.error(`❌ [DEBUG] Error scraping page ${currentUrl}:`, error);
+                console.error(`❌ [DEBUG] Error scraping page ${pageCount + 1}/${maxPages} (${currentUrl}):`, error);
+
+                // Check if it's a timeout error
+                if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+                    console.error(`⏱️ [DEBUG] TIMEOUT ERROR: Page ${pageCount + 1} timed out after 150 seconds`);
+                    console.error(`⏱️ [DEBUG] This suggests the page is extremely slow to respond`);
+                } else if (error.response?.status === 403) {
+                    console.error(`🚫 [DEBUG] BLOCKED: Page ${pageCount + 1} returned 403 Forbidden`);
+                    console.error(`🚫 [DEBUG] This suggests server-side blocking`);
+                } else if (error.response?.status === 429) {
+                    console.error(`🚦 [DEBUG] RATE LIMITED: Page ${pageCount + 1} returned 429 Too Many Requests`);
+                    console.error(`🚦 [DEBUG] This suggests rate limiting`);
+                } else {
+                    console.error(`❓ [DEBUG] UNKNOWN ERROR: Page ${pageCount + 1} failed with:`, error.message);
+                }
+
+                console.error(`❌ [DEBUG] Previous pages worked, this specific page failed`);
                 break;
             }
         }
