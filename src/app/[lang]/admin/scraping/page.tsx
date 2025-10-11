@@ -33,6 +33,12 @@ export default function ScrapingAdminPage() {
     const [scrapedProducts, setScrapedProducts] = useState<Product[]>([]);
     const [showCustomConfig, setShowCustomConfig] = useState(false);
 
+    // Batch processing state
+    const [useBatchProcessing, setUseBatchProcessing] = useState(false);
+    const [startPage, setStartPage] = useState(1);
+    const [endPage, setEndPage] = useState(10);
+    const [batchSize, setBatchSize] = useState(5);
+
     // Check authentication on mount
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -96,7 +102,14 @@ export default function ScrapingAdminPage() {
         setScrapingResult(null);
 
         try {
-            const requestBody: { url: string; configType: string; customConfig?: Record<string, unknown> } = { url, configType };
+            const requestBody: {
+                url: string;
+                configType: string;
+                customConfig?: Record<string, unknown>;
+                startPage?: number;
+                endPage?: number;
+                batchSize?: number;
+            } = { url, configType };
 
             if (showCustomConfig && customConfig) {
                 try {
@@ -109,6 +122,13 @@ export default function ScrapingAdminPage() {
                     setIsLoading(false);
                     return;
                 }
+            }
+
+            // Add batch processing parameters if enabled
+            if (useBatchProcessing) {
+                requestBody.startPage = startPage;
+                requestBody.endPage = endPage;
+                requestBody.batchSize = batchSize;
             }
 
             const response = await fetch('/api/scrape', {
@@ -342,12 +362,63 @@ export default function ScrapingAdminPage() {
                             </div>
                         )}
 
+                        {/* Batch Processing Section */}
+                        <div className="border-t pt-4">
+                            <div className="flex items-center mb-4">
+                                <label className="flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        checked={useBatchProcessing}
+                                        onChange={(e) => setUseBatchProcessing(e.target.checked)}
+                                        className="mr-2"
+                                    />
+                                    <span className="text-sm font-medium">Enable Batch Processing</span>
+                                </label>
+                            </div>
+
+                            {useBatchProcessing && (
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Start Page</label>
+                                        <input
+                                            type="number"
+                                            value={startPage}
+                                            onChange={(e) => setStartPage(Math.max(1, parseInt(e.target.value) || 1))}
+                                            min="1"
+                                            className="w-full px-3 py-2 border rounded-md"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">End Page</label>
+                                        <input
+                                            type="number"
+                                            value={endPage}
+                                            onChange={(e) => setEndPage(Math.max(startPage, parseInt(e.target.value) || startPage))}
+                                            min={startPage}
+                                            className="w-full px-3 py-2 border rounded-md"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Batch Size (pages per request)</label>
+                                        <input
+                                            type="number"
+                                            value={batchSize}
+                                            onChange={(e) => setBatchSize(Math.max(1, Math.min(10, parseInt(e.target.value) || 5)))}
+                                            min="1"
+                                            max="10"
+                                            className="w-full px-3 py-2 border rounded-md"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                         <button
                             onClick={handleScrape}
                             disabled={isLoading || !url}
                             className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
                         >
-                            {isLoading ? 'Scraping...' : 'Start Scraping'}
+                            {isLoading ? 'Scraping...' : useBatchProcessing ? `Start Batch Scraping (${startPage}-${endPage})` : 'Start Scraping'}
                         </button>
                     </div>
 

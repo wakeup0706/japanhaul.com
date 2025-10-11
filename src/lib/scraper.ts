@@ -896,6 +896,47 @@ export class WebScraper {
         console.log(`\n🎉 [DEBUG] Pagination completed! Total pages scraped: ${pageCount}, Total products: ${allProducts.length}`);
         return allProducts;
     }
+
+    /**
+     * Scrape products from a specific range of pages (batch processing)
+     */
+    async scrapePageBatch(config: ScrapingConfig, startPage: number, endPage: number): Promise<ScrapedProduct[]> {
+        console.log(`🔄 [BATCH] Starting batch scrape: pages ${startPage} to ${endPage}`);
+        console.log('🔄 [BATCH] Current time:', new Date().toISOString());
+
+        const allProducts: ScrapedProduct[] = [];
+        const totalPages = endPage - startPage + 1;
+
+        for (let page = startPage; page <= endPage; page++) {
+            const pageUrl = page === 1 ? config.url : `${config.url}?page=${page}`;
+            console.log(`📄 [BATCH] Scraping page ${page}/${totalPages}: ${pageUrl}`);
+
+            try {
+                const products = await this.scrapeProducts({ ...config, url: pageUrl });
+                console.log(`✅ [BATCH] Page ${page}: Found ${products.length} products`);
+                allProducts.push(...products);
+
+                // Add delay between pages to avoid overwhelming the server
+                if (page < endPage) {
+                    console.log(`⏱️ [BATCH] Waiting 2 seconds before next page...`);
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+            } catch (error: any) {
+                console.error(`❌ [BATCH] Failed to scrape page ${page}:`, error?.message || error);
+
+                // If a page fails, we can either:
+                // 1. Continue with next pages (more resilient)
+                // 2. Stop and return what we have (safer)
+                // For now, let's continue but log the error
+                console.error(`❌ [BATCH] Continuing with next pages despite error on page ${page}`);
+            }
+        }
+
+        console.log(`🎉 [BATCH] Batch completed! Total products: ${allProducts.length} from ${totalPages} pages`);
+        console.log('🔄 [BATCH] Total time:', new Date().toISOString());
+
+        return allProducts;
+    }
 }
 
 // Predefined scraping configurations for popular e-commerce sites

@@ -5,7 +5,7 @@ import { WebScraper, ScrapingConfig, scrapingConfigs } from '@/lib/scraper';
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { url, configType = 'generic', customConfig } = body;
+        const { url, configType = 'generic', customConfig, startPage, endPage, batchSize } = body;
 
         if (!url) {
             return NextResponse.json(
@@ -46,10 +46,18 @@ export async function POST(request: NextRequest) {
 
         console.log('Starting scraping for:', url);
         console.log('Pagination config:', scrapingConfig.pagination);
+        console.log('Batch params:', { startPage, endPage, batchSize });
 
-        // For now, use scrapeProducts only to test single page scraping
-        // TODO: Re-enable pagination once single page works reliably
-        const products = await scraper.scrapeProducts(scrapingConfig);
+        let products: ScrapedProduct[] = [];
+
+        // Handle batch processing if parameters are provided
+        if (startPage !== undefined && endPage !== undefined) {
+            console.log(`🔄 [BATCH] Processing pages ${startPage} to ${endPage}`);
+            products = await scraper.scrapePageBatch(scrapingConfig, startPage, endPage);
+        } else {
+            // Use scrapeProducts for single page or existing logic
+            products = await scraper.scrapeProducts(scrapingConfig);
+        }
 
         // Transform scraped products to match our Product type
         const transformedProducts = products.map((product, index) => ({
