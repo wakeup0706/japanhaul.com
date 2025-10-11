@@ -32,6 +32,10 @@ export const WEBSITE_CONFIGS: WebsiteConfig[] = [
                 image: '.product-collection__image img, .rimage__img, [data-master], [srcset]',
                 description: '.product-collection__content',
             },
+            pagination: {
+                nextPageSelector: '.pagination a[href*="?page="], .next[href*="?page="], a[href*="?page="]:last-child',
+                maxPages: 10
+            }
         },
         schedule: {
             enabled: true,
