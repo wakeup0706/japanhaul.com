@@ -834,12 +834,18 @@ export class WebScraper {
                     const nextPageElement = $(config.pagination.nextPageSelector);
                     console.log('🔗 [DEBUG] Found', nextPageElement.length, 'elements matching selector');
 
-                    const nextPageUrl = nextPageElement.attr('href');
-                    console.log('🔗 [DEBUG] Next page href attribute:', nextPageUrl);
+                    // Debug: List all found elements and their hrefs
+                    nextPageElement.each((i, elem) => {
+                        const href = $(elem).attr('href');
+                        console.log(`🔗 [DEBUG] Element ${i} href:`, href);
+                    });
+
+                    const nextPageUrl = nextPageElement.first().attr('href');
+                    console.log('🔗 [DEBUG] First element href attribute:', nextPageUrl);
 
                     if (nextPageUrl && nextPageUrl !== currentUrl) {
                         currentUrl = nextPageUrl.startsWith('http') ? nextPageUrl : new URL(nextPageUrl, currentUrl).href;
-                        console.log('🔗 [DEBUG] Next page URL:', currentUrl);
+                        console.log('🔗 [DEBUG] Constructed next page URL:', currentUrl);
                     } else {
                         console.log('🔗 [DEBUG] No valid next page URL found, ending pagination');
                         currentUrl = ''; // No more pages

@@ -33,7 +33,7 @@ export const WEBSITE_CONFIGS: WebsiteConfig[] = [
                 description: '.product-collection__content',
             },
             pagination: {
-                nextPageSelector: '.pagination a[href*="?page="], .next[href*="?page="], a[href*="?page="]:last-child',
+                nextPageSelector: '.pagination__item--next[href*="/collections/newitems?page="], .pagination__item--prev[href*="/collections/newitems?page="], a[href*="/collections/newitems?page="]',
                 maxPages: 3
             }
         },
