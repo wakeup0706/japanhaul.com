@@ -95,17 +95,30 @@ export class WebScraper {
         await this.loadDependencies();
 
         try {
+            // Randomize headers to avoid detection
+            const userAgents = [
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0',
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/121.0'
+            ];
+
+            const randomUserAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
+
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const response = await (this.axios as any).get(config.url, {
                 headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    'User-Agent': randomUserAgent,
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
                     'Accept-Language': 'en-US,en;q=0.5',
                     'Accept-Encoding': 'gzip, deflate',
                     'Connection': 'keep-alive',
                     'Upgrade-Insecure-Requests': '1',
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache',
                 },
-                timeout: 150000,
+                timeout: 60000,
             });
 
             const $ = this.cheerio.load(response.data);
@@ -784,16 +797,29 @@ export class WebScraper {
                 // Find next page URL
                 if (config.pagination && config.pagination.nextPageSelector) {
                     console.log('🔗 [DEBUG] Looking for next page URL...');
+                    // Randomize headers for pagination requests too
+                    const paginationUserAgents = [
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0',
+                        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/121.0'
+                    ];
+
+                    const randomPaginationUserAgent = paginationUserAgents[Math.floor(Math.random() * paginationUserAgents.length)];
+
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const response = await (this.axios as { get: (url: string, config: { timeout: number; headers: Record<string, string> }) => Promise<any> }).get(currentUrl, {
-                        timeout: 150000,
+                        timeout: 60000,
                         headers: {
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                            'User-Agent': randomPaginationUserAgent,
                             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
                             'Accept-Language': 'en-US,en;q=0.5',
                             'Accept-Encoding': 'gzip, deflate',
                             'Connection': 'keep-alive',
                             'Upgrade-Insecure-Requests': '1',
+                            'Cache-Control': 'no-cache',
+                            'Pragma': 'no-cache',
                         }
                     });
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
