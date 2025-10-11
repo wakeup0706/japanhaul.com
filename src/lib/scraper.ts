@@ -1,6 +1,9 @@
 // Web scraping utilities for extracting product data from websites
 // Note: You'll need to install cheerio and axios first: npm install cheerio axios
 
+// Cheerio types are not available in this version, using any for now
+// TODO: Update to proper cheerio types when available
+
 export interface ScrapedProduct {
     id: string;
     title: string;
@@ -15,6 +18,27 @@ export interface ScrapedProduct {
     condition?: "new" | "used" | "refurbished";
     isSoldOut?: boolean;
     labels?: string[];
+}
+
+interface JsonLdProduct {
+    '@type'?: string;
+    '@context'?: string;
+    name?: string;
+    description?: string;
+    image?: string | string[];
+    offers?: {
+        price?: string;
+        priceCurrency?: string;
+        availability?: string;
+    } | Array<{
+        price?: string;
+        priceCurrency?: string;
+        availability?: string;
+    }>;
+    brand?: {
+        name?: string;
+    };
+    category?: string;
 }
 
 export interface ScrapingConfig {
@@ -36,8 +60,8 @@ export interface ScrapingConfig {
 }
 
 export class WebScraper {
-    private axios: typeof import('axios');
-    private cheerio: typeof import('cheerio');
+    private axios: any;
+    private cheerio: any;
 
     constructor() {
         // Dynamic imports to avoid issues if dependencies aren't installed yet
@@ -64,7 +88,7 @@ export class WebScraper {
         await this.loadDependencies();
 
         try {
-            const response = await this.axios.get(config.url, {
+            const response = await (this.axios as any).get(config.url, {
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -149,7 +173,7 @@ export class WebScraper {
                 if (allLazyImages.length > 0) {
                     for (let i = 0; i < Math.min(5, allLazyImages.length); i++) {
                         const img = $(allLazyImages[i]);
-                        let imgUrl = img.attr('data-master');
+                        let imgUrl: string | undefined = img.attr('data-master');
                         console.log('Checking image', i, 'data-master:', imgUrl);
 
                         if (imgUrl && !imgUrl.startsWith('data:image')) {
@@ -162,7 +186,7 @@ export class WebScraper {
                             // Use the first available image for all products as fallback
                             products.forEach(product => {
                                 if (!product.imageUrl) {
-                                    product.imageUrl = imgUrl.startsWith('http') ? imgUrl : `https://anime-store.jp${imgUrl}`;
+                                    product.imageUrl = imgUrl && imgUrl.startsWith('http') ? imgUrl : `https://anime-store.jp${imgUrl || ''}`;
                                 }
                             });
                             console.log('Applied fallback image to all products:', imgUrl);
@@ -207,7 +231,7 @@ export class WebScraper {
                     // Handle both single objects and arrays
                     const jsonLdItems = Array.isArray(data) ? data : [data];
 
-                    jsonLdItems.forEach((item: any) => {
+                    jsonLdItems.forEach((item: JsonLdProduct) => {
                         // Check if this is a Product schema
                         if (item['@type'] === 'Product' && item.name) {
                             const product = this.parseJsonLdProduct(item, sourceUrl, htmlContent);
@@ -235,7 +259,7 @@ export class WebScraper {
         try {
             // Extract basic product information
             const name = jsonLdItem.name || '';
-            const sku = jsonLdItem.sku || '';
+            // const sku = jsonLdItem.sku || ''; // Not used in ScrapedProduct interface
             const description = jsonLdItem.description || '';
 
             // Extract price from offers
@@ -303,7 +327,7 @@ export class WebScraper {
                     if (altText.toLowerCase().includes(productName.slice(0, 20)) ||
                         parentText.includes(productName.slice(0, 20))) {
 
-                        let imgUrl = img.attr('data-master') ||
+                        let imgUrl: string | undefined = img.attr('data-master') ||
                                      img.attr('data-src') ||
                                      img.attr('data-original') ||
                                      img.attr('src');
@@ -313,7 +337,7 @@ export class WebScraper {
                             const srcset = img.attr('srcset') || img.attr('data-srcset');
                             if (srcset) {
                                 // Extract the first URL from srcset (usually the largest/highest quality)
-                                const srcsetUrls = srcset.split(',').map(url => url.trim().split(' ')[0]);
+                                const srcsetUrls = srcset.split(',').map((url: string) => url.trim().split(' ')[0]);
                                 imgUrl = srcsetUrls[0];
                             }
                         }
@@ -345,7 +369,7 @@ export class WebScraper {
                     // If no match found, try the first available image as fallback
                     for (let i = 0; i < Math.min(10, allImages.length); i++) {
                         const img = html$(allImages[i]);
-                        let imgUrl = img.attr('data-master') ||
+                        let imgUrl: string | undefined = img.attr('data-master') ||
                                      img.attr('data-src') ||
                                      img.attr('data-original') ||
                                      img.attr('src');
@@ -355,7 +379,7 @@ export class WebScraper {
                             const srcset = img.attr('srcset') || img.attr('data-srcset');
                             if (srcset) {
                                 // Extract the first URL from srcset (usually the largest/highest quality)
-                                const srcsetUrls = srcset.split(',').map(url => url.trim().split(' ')[0]);
+                                const srcsetUrls = srcset.split(',').map((url: string) => url.trim().split(' ')[0]);
                                 imgUrl = srcsetUrls[0];
                             }
                         }
@@ -391,15 +415,16 @@ export class WebScraper {
 
             // Determine availability
             let availability: 'in' | 'out' = 'in';
-            if (jsonLdItem.offers && jsonLdItem.offers[0]) {
-                const offer = jsonLdItem.offers[0];
-                if (offer.availability === 'http://schema.org/OutOfStock' || offer.availability === 'OutOfStock') {
+            if (jsonLdItem.offers) {
+                const offers = Array.isArray(jsonLdItem.offers) ? jsonLdItem.offers : [jsonLdItem.offers];
+                const offer = offers[0];
+                if (offer && (offer.availability === 'http://schema.org/OutOfStock' || offer.availability === 'OutOfStock')) {
                     availability = 'out';
                 }
             }
 
-            // Generate unique ID using SKU or URL
-            const id = sku || `jsonld_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            // Generate unique ID using name and URL hash
+            const id = `jsonld_${Buffer.from(name + sourceUrl).toString('base64').slice(0, 16)}`;
 
             return {
                 id,
@@ -491,7 +516,7 @@ export class WebScraper {
                                 // Handle srcset attribute (contains multiple URLs separated by commas)
                                 if (imageUrl && imageUrl.includes(',')) {
                                     // Extract the first URL from srcset (usually the largest/highest quality)
-                                    const srcsetUrls = imageUrl.split(',').map(url => url.trim().split(' ')[0]);
+                                    const srcsetUrls = imageUrl.split(',').map((url: string) => url.trim().split(' ')[0]);
                                     finalUrl = srcsetUrls[0]; // Use the first (usually largest) image
 
                                     // Handle Shopify {width} placeholder in srcset URLs
@@ -564,7 +589,7 @@ export class WebScraper {
             let imageUrl: string | undefined;
             if (config.selectors.image) {
                 const imgElement = $(element).find(config.selectors.image).first();
-                let imgUrl = imgElement.attr('data-master') ||
+                let imgUrl: string | undefined = imgElement.attr('data-master') ||
                             imgElement.attr('data-src') ||
                             imgElement.attr('data-original') ||
                             imgElement.attr('src');
@@ -574,7 +599,7 @@ export class WebScraper {
                     const srcset = imgElement.attr('srcset') || imgElement.attr('data-srcset');
                     if (srcset) {
                         // Extract the first URL from srcset (usually the largest/highest quality)
-                        const srcsetUrls = srcset.split(',').map(url => url.trim().split(' ')[0]);
+                        const srcsetUrls = srcset.split(',').map((url: string) => url.trim().split(' ')[0]);
                         imgUrl = srcsetUrls[0];
                     }
                 }
@@ -739,18 +764,18 @@ export class WebScraper {
 
                 // Find next page URL
                 if (config.pagination?.nextPageSelector) {
-                    const response = await this.axios.get(currentUrl);
-                    const $ = this.cheerio.load(response.data);
+                    const response = await (this.axios as any).get(currentUrl);
+                    const $ = (this.cheerio as any).load(response.data);
                     const nextPageElement = $(config.pagination.nextPageSelector);
                     const nextPageUrl = nextPageElement.attr('href');
 
                     if (nextPageUrl && nextPageUrl !== currentUrl) {
                         currentUrl = nextPageUrl.startsWith('http') ? nextPageUrl : new URL(nextPageUrl, currentUrl).href;
                     } else {
-                        currentUrl = null; // No more pages
+                        currentUrl = ''; // No more pages
                     }
                 } else {
-                    currentUrl = null; // No pagination configured
+                    currentUrl = ''; // No pagination configured
                 }
 
                 pageCount++;

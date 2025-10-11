@@ -1,13 +1,13 @@
 // Configuration for multiple websites to scrape
 // Add your target websites here with their scraping configurations
 
-import { scrapingConfigs } from './scraper';
+import type { ScrapingConfig } from './scraper';
 
 export interface WebsiteConfig {
     name: string;
     url: string;
     enabled: boolean;
-    scrapingConfig: any; // ScrapingConfig type
+    scrapingConfig: ScrapingConfig;
     schedule?: {
         enabled: boolean;
         intervalMinutes: number;
@@ -43,6 +43,7 @@ export const WEBSITE_CONFIGS: WebsiteConfig[] = [
         url: "https://example-anime-store.com/collectibles", // Replace with actual URL
         enabled: true,
         scrapingConfig: {
+            url: "https://example-anime-store.com/collectibles",
             selectors: {
                 productList: ".products, .collection, .items",
                 productCard: ".product, .item, .collectible",
@@ -66,6 +67,7 @@ export const WEBSITE_CONFIGS: WebsiteConfig[] = [
         url: "https://example-kitchenware.jp/items", // Replace with actual URL
         enabled: true,
         scrapingConfig: {
+            url: "https://example-kitchenware.jp/items",
             selectors: {
                 productList: ".items, .products, .catalog",
                 productCard: ".item, .product, article",

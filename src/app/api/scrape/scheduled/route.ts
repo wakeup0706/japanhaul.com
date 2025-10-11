@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { WebScraper } from '@/lib/scraper';
-import { getWebsitesNeedingUpdate, updateWebsiteLastRun, WebsiteConfig } from '@/lib/scraping-config';
+import { getWebsitesNeedingUpdate, updateWebsiteLastRun, getEnabledWebsites } from '@/lib/scraping-config';
 import { addScrapedProducts } from '@/app/_data/products';
 
 // GET /api/scrape/scheduled - Run scheduled scraping for all websites that need updating
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
         // Get websites that need updating (or all if forced)
         const websitesToUpdate = forceAll
-            ? require('@/lib/scraping-config').getEnabledWebsites()
+            ? getEnabledWebsites()
             : getWebsitesNeedingUpdate();
 
         if (websitesToUpdate.length === 0) {

@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Transform scraped products to match our Product type
-        const transformedProducts: Product[] = products.map((product: any) => ({
+        const transformedProducts: Product[] = products.map((product: ScrapedProduct) => ({
             id: `scraped_${nextId++}_${Date.now()}`,
             title: product.title,
             price: product.price || 0,
