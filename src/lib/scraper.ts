@@ -686,7 +686,7 @@ export class WebScraper {
         let isSoldOut = false;
 
         // Get all text content from the product element for analysis
-        const productText = $(element).text().toLowerCase() + ' ' + (title.toLowerCase() || '') + ' ' + (description?.toLowerCase() || '');
+        const productText = $(element).text().toLowerCase() + ' ' + (title.toLowerCase() || '') + ' ' + (description ? description.toLowerCase() : '');
 
         // Check for sold out indicators
         const soldOutIndicators = [
@@ -762,13 +762,13 @@ export class WebScraper {
     async scrapeMultiplePages(config: ScrapingConfig): Promise<ScrapedProduct[]> {
         console.log('🔍 [DEBUG] Starting pagination scraping...');
         console.log('🔍 [DEBUG] Base URL:', config.url);
-        console.log('🔍 [DEBUG] Next page selector:', config.pagination?.nextPageSelector);
-        console.log('🔍 [DEBUG] Max pages:', config.pagination?.maxPages);
+        console.log('🔍 [DEBUG] Next page selector:', config.pagination ? config.pagination.nextPageSelector : 'none');
+        console.log('🔍 [DEBUG] Max pages:', config.pagination ? config.pagination.maxPages : 'none');
 
         const allProducts: ScrapedProduct[] = [];
         let currentUrl = config.url;
         let pageCount = 0;
-        const maxPages = config.pagination?.maxPages || 5;
+        const maxPages = config.pagination ? config.pagination.maxPages || 5 : 5;
 
         while (currentUrl && pageCount < maxPages) {
             console.log(`\n📄 [DEBUG] Scraping page ${pageCount + 1}/${maxPages}`);
@@ -782,10 +782,10 @@ export class WebScraper {
                 console.log(`📊 [DEBUG] Total products so far: ${allProducts.length}`);
 
                 // Find next page URL
-                if (config.pagination?.nextPageSelector) {
+                if (config.pagination && config.pagination.nextPageSelector) {
                     console.log('🔗 [DEBUG] Looking for next page URL...');
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const response = await (this.axios as any).get(currentUrl, {
+                    const response = await (this.axios as { get: (url: string, config: { timeout: number; headers: Record<string, string> }) => Promise<any> }).get(currentUrl, {
                         timeout: 150000,
                         headers: {
                             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -835,13 +835,13 @@ export class WebScraper {
                 };
 
                 // Check if it's a timeout error
-                if (isErrorWithCode(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout'))) {
+                if (isErrorWithCode(error) && (error.code === 'ECONNABORTED' || (error.message && error.message.includes('timeout')))) {
                     console.error(`⏱️ [DEBUG] TIMEOUT ERROR: Page ${pageCount + 1} timed out after 150 seconds`);
                     console.error(`⏱️ [DEBUG] This suggests the page is extremely slow to respond`);
-                } else if (isErrorWithCode(error) && error.response?.status === 403) {
+                } else if (isErrorWithCode(error) && error.response && error.response.status === 403) {
                     console.error(`🚫 [DEBUG] BLOCKED: Page ${pageCount + 1} returned 403 Forbidden`);
                     console.error(`🚫 [DEBUG] This suggests server-side blocking`);
-                } else if (isErrorWithCode(error) && error.response?.status === 429) {
+                } else if (isErrorWithCode(error) && error.response && error.response.status === 429) {
                     console.error(`🚦 [DEBUG] RATE LIMITED: Page ${pageCount + 1} returned 429 Too Many Requests`);
                     console.error(`🚦 [DEBUG] This suggests rate limiting`);
                 } else {

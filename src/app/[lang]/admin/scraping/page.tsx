@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -388,9 +389,11 @@ export default function ScrapingAdminPage() {
                                 <div key={product.id} className="flex items-start gap-4 p-4 border rounded-md">
                                     <div className="flex-shrink-0">
                                         {product.imageUrl ? (
-                                            <img
+                                            <Image
                                                 src={product.imageUrl}
-                                                alt={product.title}
+                                                alt={product.title || 'Product image'}
+                                                width={64}
+                                                height={64}
                                                 className="w-16 h-16 object-cover rounded-md border"
                                                 onError={(e) => {
                                                     const target = e.target as HTMLImageElement;

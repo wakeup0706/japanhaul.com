@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Portal from "@/app/_components/Portal";
@@ -101,10 +102,16 @@ export default function Header({ lang }: { lang: "en" | "ja" }) {
                                 className="flex items-center gap-2 hover:bg-gray-100 rounded-full px-3 py-2 transition-colors"
                             >
                                 {currentUser.photoURL ? (
-                                    <img
-                                        src={currentUser.photoURL}
+                                    <Image
+                                        src={currentUser.photoURL || '/placeholder-avatar.png'}
                                         alt={currentUser.displayName || 'User'}
+                                        width={32}
+                                        height={32}
                                         className="h-8 w-8 rounded-full"
+                                        onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            target.src = '/placeholder-avatar.png';
+                                        }}
                                     />
                                 ) : (
                                     <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
