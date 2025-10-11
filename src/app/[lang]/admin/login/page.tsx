@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
 export default function AdminLoginPage() {
+    const { lang: rawLang } = useParams<{ lang: string }>();
+    const lang = rawLang === "ja" ? "ja" : "en";
     const router = useRouter();
     const searchParams = useSearchParams();
     const [email, setEmail] = useState("");
@@ -14,8 +16,11 @@ export default function AdminLoginPage() {
     const [error, setError] = useState("");
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
-    // Get redirect URL from query params
-    const redirectTo = searchParams.get('redirect') || '/admin/scraping';
+    // Get redirect URL from query params and ensure it has language prefix
+    const redirectParam = searchParams.get('redirect') || '/admin/scraping';
+    const redirectTo = redirectParam.startsWith('/') && !redirectParam.startsWith(`/${lang}/`)
+        ? `/${lang}${redirectParam}`
+        : redirectParam;
 
     const checkAdminAccess = useCallback(async (uid: string, email: string | null) => {
         try {

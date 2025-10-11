@@ -3,21 +3,28 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
+    console.log('Middleware - pathname:', pathname);
 
     // Protect admin routes (with or without language prefix)
     if (pathname.startsWith('/admin') || pathname.match(/^\/[a-z]{2}\/admin/)) {
+        console.log('Middleware - protecting admin route');
+
         // Allow access to login pages
         if (pathname.endsWith('/admin/login')) {
+            console.log('Middleware - allowing access to login page');
             return NextResponse.next();
         }
 
         // For protected admin routes, redirect to appropriate login page
         // Extract language prefix if present
         const langMatch = pathname.match(/^\/([a-z]{2})\//);
-        const lang = langMatch ? langMatch[1] : '';
+        const lang = langMatch ? langMatch[1] : 'en'; // Default to English if no language prefix
+        console.log('Middleware - detected language:', lang);
 
         // Create login URL with proper language prefix
         const loginUrl = new URL(`/${lang}/admin/login`, request.url);
+        console.log('Middleware - redirecting to:', loginUrl.toString());
+
         if (pathname !== `/${lang}/admin/login`) {
             loginUrl.searchParams.set('redirect', pathname);
         }
