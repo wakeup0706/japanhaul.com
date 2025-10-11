@@ -121,7 +121,7 @@ export class WebScraper {
                     'Cache-Control': 'no-cache',
                     'Pragma': 'no-cache',
                 },
-                timeout: 25000,
+                timeout: 8000,
             });
 
             console.log('🔍 [DEBUG] HTTP request completed, status:', response.status);
@@ -818,7 +818,7 @@ export class WebScraper {
 
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const response = await (this.axios as { get: (url: string, config: { timeout: number; headers: Record<string, string> }) => Promise<any> }).get(currentUrl, {
-                        timeout: 25000,
+                        timeout: 8000,
                         headers: {
                             'User-Agent': randomPaginationUserAgent,
                             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -876,7 +876,7 @@ export class WebScraper {
 
                 // Check if it's a timeout error
                 if (isErrorWithCode(error) && (error.code === 'ECONNABORTED' || (error.message && error.message.includes('timeout')))) {
-                    console.error(`⏱️ [DEBUG] TIMEOUT ERROR: Page ${pageCount + 1} timed out after 120 seconds`);
+                    console.error(`⏱️ [DEBUG] TIMEOUT ERROR: Page ${pageCount + 1} timed out after 8 seconds`);
                     console.error(`⏱️ [DEBUG] This suggests the page is extremely slow to respond`);
                 } else if (isErrorWithCode(error) && error.response && error.response.status === 403) {
                     console.error(`🚫 [DEBUG] BLOCKED: Page ${pageCount + 1} returned 403 Forbidden`);
@@ -918,8 +918,8 @@ export class WebScraper {
 
                 // Add delay between pages to avoid overwhelming the server
                 if (page < endPage) {
-                    console.log(`⏱️ [BATCH] Waiting 2 seconds before next page...`);
-                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    console.log(`⏱️ [BATCH] Waiting 1 second before next page...`);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
             } catch (error: unknown) {
                 console.error(`❌ [BATCH] Failed to scrape page ${page}:`, error instanceof Error ? error.message : String(error));

@@ -36,8 +36,8 @@ export default function ScrapingAdminPage() {
     // Batch processing state
     const [useBatchProcessing, setUseBatchProcessing] = useState(false);
     const [startPage, setStartPage] = useState(1);
-    const [endPage, setEndPage] = useState(10);
-    const [batchSize, setBatchSize] = useState(5);
+    const [endPage, setEndPage] = useState(3);
+    const [batchSize, setBatchSize] = useState(1);
 
     // Check authentication on mount
     useEffect(() => {
