@@ -11,7 +11,7 @@ import type { Product } from "@/app/_data/products";
 
 interface ScrapingResult {
     success: boolean;
-    products?: any[];
+    products?: ScrapedProduct[];
     count?: number;
     error?: string;
 }
@@ -106,10 +106,12 @@ export default function ScrapingAdminPage() {
         );
     }
 
-    // Fetch existing scraped products on mount
+    // Fetch existing scraped products on mount (only if authenticated)
     useEffect(() => {
-        fetchScrapedProducts();
-    }, []);
+        if (isAuthenticated) {
+            fetchScrapedProducts();
+        }
+    }, [isAuthenticated]);
 
     const fetchScrapedProducts = async () => {
         try {

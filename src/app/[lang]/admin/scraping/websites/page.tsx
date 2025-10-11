@@ -92,10 +92,12 @@ export default function WebsiteManagementPage() {
         }
     };
 
-    // Load websites on mount
+    // Load websites on mount (only if authenticated)
     useEffect(() => {
-        setWebsites(WEBSITE_CONFIGS);
-    }, []);
+        if (isAuthenticated) {
+            setWebsites(WEBSITE_CONFIGS);
+        }
+    }, [isAuthenticated]);
 
     const handleToggleWebsite = (name: string) => {
         const updatedWebsites = websites.map(w =>

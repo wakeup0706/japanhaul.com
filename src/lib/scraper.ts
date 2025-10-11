@@ -36,8 +36,8 @@ export interface ScrapingConfig {
 }
 
 export class WebScraper {
-    private axios: any;
-    private cheerio: any;
+    private axios: typeof import('axios');
+    private cheerio: typeof import('cheerio');
 
     constructor() {
         // Dynamic imports to avoid issues if dependencies aren't installed yet
@@ -99,7 +99,7 @@ export class WebScraper {
                     productElements = $(config.selectors.productCard || '.product, [class*="product"], article');
                 }
 
-                productElements.each((index: number, element: any) => {
+                productElements.each((index: number, element: cheerio.Element) => {
                     const product = this.extractProductData($, element, config, index);
                     if (product) {
                         products.push(product);
@@ -125,7 +125,7 @@ export class WebScraper {
 
                 console.log('Found', productElements.length, 'product elements for image extraction');
 
-                productElements.each((index: number, element: any) => {
+                productElements.each((index: number, element: cheerio.Element) => {
                     if (index < products.length) {
                         const imageUrl = this.extractImageFromHtml($, element, config);
                         if (imageUrl) {
