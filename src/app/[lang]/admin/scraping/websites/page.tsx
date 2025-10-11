@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { WebsiteConfig, WEBSITE_CONFIGS, getEnabledWebsites, getWebsitesNeedingUpdate } from "@/lib/scraping-config";
@@ -11,7 +10,6 @@ import { WebsiteConfig, WEBSITE_CONFIGS, getEnabledWebsites, getWebsitesNeedingU
 export default function WebsiteManagementPage() {
     const { lang: rawLang } = useParams<{ lang: string }>();
     const lang = rawLang === "ja" ? "ja" : "en";
-    const router = useRouter();
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
     const [websites, setWebsites] = useState<WebsiteConfig[]>(WEBSITE_CONFIGS);
     const [isLoading, setIsLoading] = useState(false);

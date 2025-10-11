@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "firebase/auth";
+import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
 export default function AdminLoginPage() {
@@ -16,6 +16,36 @@ export default function AdminLoginPage() {
 
     // Get redirect URL from query params
     const redirectTo = searchParams.get('redirect') || '/admin/scraping';
+
+    const checkAdminAccess = useCallback(async (uid: string, email: string | null) => {
+        try {
+            // Check if user has admin privileges
+            // You can customize this logic based on your requirements
+            const response = await fetch('/api/admin/check-access', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ uid, email }),
+            });
+
+            const data = await response.json();
+
+            if (data.isAdmin) {
+                setIsAuthenticated(true);
+                router.push(redirectTo);
+            } else {
+                setIsAuthenticated(false);
+                setError('Access denied. Admin privileges required.');
+                // Don't sign out - let them use the normal login system
+                // They'll be redirected back to the main page
+                router.push('/');
+            }
+        } catch (error) {
+            setIsAuthenticated(false);
+            setError('Error checking admin access');
+        }
+    }, [router, redirectTo]);
 
     // Check if user is already authenticated and has admin access
     useEffect(() => {
@@ -53,36 +83,6 @@ export default function AdminLoginPage() {
             </div>
         );
     }
-
-    const checkAdminAccess = useCallback(async (uid: string, email: string | null) => {
-        try {
-            // Check if user has admin privileges
-            // You can customize this logic based on your requirements
-            const response = await fetch('/api/admin/check-access', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ uid, email }),
-            });
-
-            const data = await response.json();
-
-            if (data.isAdmin) {
-                setIsAuthenticated(true);
-                router.push(redirectTo);
-            } else {
-                setIsAuthenticated(false);
-                setError('Access denied. Admin privileges required.');
-                // Don't sign out - let them use the normal login system
-                // They'll be redirected back to the main page
-                router.push('/');
-            }
-        } catch (error) {
-            setIsAuthenticated(false);
-            setError('Error checking admin access');
-        }
-    }, [router, redirectTo]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

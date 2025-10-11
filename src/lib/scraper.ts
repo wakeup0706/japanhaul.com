@@ -2,9 +2,13 @@
 // Note: You'll need to install cheerio and axios first: npm install cheerio axios
 
 // Type definitions for cheerio and axios since proper types aren't available
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type CheerioAPI = any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type CheerioStatic = any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AxiosInstance = any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Element = any;
 
 export interface ScrapedProduct {
@@ -91,6 +95,7 @@ export class WebScraper {
         await this.loadDependencies();
 
         try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const response = await (this.axios as any).get(config.url, {
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -767,7 +772,9 @@ export class WebScraper {
 
                 // Find next page URL
                 if (config.pagination?.nextPageSelector) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const response = await (this.axios as any).get(currentUrl);
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const $ = (this.cheerio as any).load(response.data);
                     const nextPageElement = $(config.pagination.nextPageSelector);
                     const nextPageUrl = nextPageElement.attr('href');
