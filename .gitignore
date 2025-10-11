@@ -44,3 +44,6 @@ next-env.d.ts
 # local helper docs (ignored)
 DEV_PUSH_GUIDE.md
 README.md
+SCRAPING_README.md
+ENHANCED_SCRAPING_README.md
+ADMIN_AUTH_README.md
