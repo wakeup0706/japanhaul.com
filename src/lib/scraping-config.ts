@@ -34,7 +34,7 @@ export const WEBSITE_CONFIGS: WebsiteConfig[] = [
             },
             pagination: {
                 nextPageSelector: '.pagination a[href*="?page="], .next[href*="?page="], a[href*="?page="]:last-child',
-                maxPages: 1
+                maxPages: 3
             }
         },
         schedule: {

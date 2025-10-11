@@ -5,6 +5,19 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
 	reactStrictMode: true,
+	images: {
+		domains: ['anime-store.jp', 'cdn.shopify.com'],
+		remotePatterns: [
+			{
+				protocol: 'https',
+				hostname: 'anime-store.jp',
+			},
+			{
+				protocol: 'https',
+				hostname: 'cdn.shopify.com',
+			},
+		],
+	},
 };
 
 export default withNextIntl(nextConfig);
