@@ -835,7 +835,7 @@ export class WebScraper {
                     console.log('🔗 [DEBUG] Found', nextPageElement.length, 'elements matching selector');
 
                     // Debug: List all found elements and their hrefs
-                    nextPageElement.each((i, elem) => {
+                    nextPageElement.each((i: number, elem: any) => {
                         const href = $(elem).attr('href');
                         console.log(`🔗 [DEBUG] Element ${i} href:`, href);
                     });
@@ -873,7 +873,7 @@ export class WebScraper {
 
                 // Check if it's a timeout error
                 if (isErrorWithCode(error) && (error.code === 'ECONNABORTED' || (error.message && error.message.includes('timeout')))) {
-                    console.error(`⏱️ [DEBUG] TIMEOUT ERROR: Page ${pageCount + 1} timed out after 150 seconds`);
+                    console.error(`⏱️ [DEBUG] TIMEOUT ERROR: Page ${pageCount + 1} timed out after 120 seconds`);
                     console.error(`⏱️ [DEBUG] This suggests the page is extremely slow to respond`);
                 } else if (isErrorWithCode(error) && error.response && error.response.status === 403) {
                     console.error(`🚫 [DEBUG] BLOCKED: Page ${pageCount + 1} returned 403 Forbidden`);
@@ -882,7 +882,7 @@ export class WebScraper {
                     console.error(`🚦 [DEBUG] RATE LIMITED: Page ${pageCount + 1} returned 429 Too Many Requests`);
                     console.error(`🚦 [DEBUG] This suggests rate limiting`);
                 } else {
-                    console.error(`❓ [DEBUG] UNKNOWN ERROR: Page ${pageCount + 1} failed with:`, isErrorWithCode(error) ? error.message || error : error);
+                    console.error(`❓ [DEBUG] UNKNOWN ERROR: Page ${pageCount + 1} failed with:`, isErrorWithCode(error) ? (error as any).message || error : error);
                 }
 
                 console.error(`❌ [DEBUG] Previous pages worked, this specific page failed`);
