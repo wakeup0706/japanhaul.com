@@ -921,8 +921,8 @@ export class WebScraper {
                     console.log(`⏱️ [BATCH] Waiting 2 seconds before next page...`);
                     await new Promise(resolve => setTimeout(resolve, 2000));
                 }
-            } catch (error: any) {
-                console.error(`❌ [BATCH] Failed to scrape page ${page}:`, error?.message || error);
+            } catch (error: unknown) {
+                console.error(`❌ [BATCH] Failed to scrape page ${page}:`, error instanceof Error ? error.message : String(error));
 
                 // If a page fails, we can either:
                 // 1. Continue with next pages (more resilient)
