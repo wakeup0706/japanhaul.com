@@ -835,7 +835,7 @@ export class WebScraper {
                     console.log('🔗 [DEBUG] Found', nextPageElement.length, 'elements matching selector');
 
                     // Debug: List all found elements and their hrefs
-                    nextPageElement.each((i: number, elem: any) => {
+                    nextPageElement.each((i: number, elem: Element) => {
                         const href = $(elem).attr('href');
                         console.log(`🔗 [DEBUG] Element ${i} href:`, href);
                     });
@@ -882,7 +882,7 @@ export class WebScraper {
                     console.error(`🚦 [DEBUG] RATE LIMITED: Page ${pageCount + 1} returned 429 Too Many Requests`);
                     console.error(`🚦 [DEBUG] This suggests rate limiting`);
                 } else {
-                    console.error(`❓ [DEBUG] UNKNOWN ERROR: Page ${pageCount + 1} failed with:`, isErrorWithCode(error) ? (error as any).message || error : error);
+                    console.error(`❓ [DEBUG] UNKNOWN ERROR: Page ${pageCount + 1} failed with:`, isErrorWithCode(error) ? (error as { message?: string }).message || String(error) : String(error));
                 }
 
                 console.error(`❌ [DEBUG] Previous pages worked, this specific page failed`);
