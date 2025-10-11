@@ -85,7 +85,7 @@ export const WEBSITE_CONFIGS: WebsiteConfig[] = [
             enabled: true,
             intervalMinutes: 30
         }
-    }
+    },
     {
         name: "Amnibus",
         url: "https://amnibus.com/products/list",
