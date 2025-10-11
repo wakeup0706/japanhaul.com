@@ -93,6 +93,7 @@ export class WebScraper {
      */
     async scrapeProducts(config: ScrapingConfig): Promise<ScrapedProduct[]> {
         console.log('🔍 [DEBUG] scrapeProducts called with config:', config.url);
+        console.log('🔍 [DEBUG] Starting at:', new Date().toISOString());
         await this.loadDependencies();
 
         try {
@@ -120,11 +121,12 @@ export class WebScraper {
                     'Cache-Control': 'no-cache',
                     'Pragma': 'no-cache',
                 },
-                timeout: 120000,
+                timeout: 25000,
             });
 
             console.log('🔍 [DEBUG] HTTP request completed, status:', response.status);
             console.log('🔍 [DEBUG] Response data length:', response.data?.length || 'unknown');
+            console.log('🔍 [DEBUG] HTTP request took:', new Date().toISOString());
 
             const $ = this.cheerio.load(response.data);
             const products: ScrapedProduct[] = [];
@@ -231,6 +233,7 @@ export class WebScraper {
             const productsWithImages = products.filter(p => p.imageUrl).length;
             const productsWithoutImages = products.filter(p => !p.imageUrl).length;
             console.log(`Scraping completed: ${products.length} products, ${productsWithImages} with images, ${productsWithoutImages} without images`);
+            console.log('🔍 [DEBUG] Total scraping time:', new Date().toISOString());
 
             return products;
                         } catch (_error) {
@@ -815,7 +818,7 @@ export class WebScraper {
 
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const response = await (this.axios as { get: (url: string, config: { timeout: number; headers: Record<string, string> }) => Promise<any> }).get(currentUrl, {
-                        timeout: 120000,
+                        timeout: 25000,
                         headers: {
                             'User-Agent': randomPaginationUserAgent,
                             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
