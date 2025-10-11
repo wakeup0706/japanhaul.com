@@ -313,6 +313,7 @@ export default function ScrapingAdminPage() {
                                 >
                                     <option value="generic">Generic</option>
                                     <option value="animeStore">Anime Store JP</option>
+                                    <option value="amnibus">Amnibus</option>
                                     <option value="amazon">Amazon Style</option>
                                     <option value="ebay">eBay Style</option>
                                 </select>
