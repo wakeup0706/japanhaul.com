@@ -45,7 +45,12 @@ export async function POST(request: NextRequest) {
         scrapingConfig.url = url;
 
         console.log('Starting scraping for:', url);
-        const products = await scraper.scrapeProducts(scrapingConfig);
+        console.log('Pagination config:', scrapingConfig.pagination);
+
+        // Use scrapeMultiplePages if pagination is configured, otherwise use scrapeProducts
+        const products = scrapingConfig.pagination
+            ? await scraper.scrapeMultiplePages(scrapingConfig)
+            : await scraper.scrapeProducts(scrapingConfig);
 
         // Transform scraped products to match our Product type
         const transformedProducts = products.map((product, index) => ({

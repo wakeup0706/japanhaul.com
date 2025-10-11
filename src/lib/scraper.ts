@@ -760,41 +760,63 @@ export class WebScraper {
      * Scrape multiple pages if pagination is configured
      */
     async scrapeMultiplePages(config: ScrapingConfig): Promise<ScrapedProduct[]> {
+        console.log('🔍 [DEBUG] Starting pagination scraping...');
+        console.log('🔍 [DEBUG] Base URL:', config.url);
+        console.log('🔍 [DEBUG] Next page selector:', config.pagination?.nextPageSelector);
+        console.log('🔍 [DEBUG] Max pages:', config.pagination?.maxPages);
+
         const allProducts: ScrapedProduct[] = [];
         let currentUrl = config.url;
         let pageCount = 0;
         const maxPages = config.pagination?.maxPages || 5;
 
         while (currentUrl && pageCount < maxPages) {
+            console.log(`\n📄 [DEBUG] Scraping page ${pageCount + 1}/${maxPages}`);
+            console.log('📄 [DEBUG] Current URL:', currentUrl);
+
             try {
                 const products = await this.scrapeProducts({ ...config, url: currentUrl });
+                console.log(`✅ [DEBUG] Found ${products.length} products on page ${pageCount + 1}`);
                 allProducts.push(...products);
+
+                console.log(`📊 [DEBUG] Total products so far: ${allProducts.length}`);
 
                 // Find next page URL
                 if (config.pagination?.nextPageSelector) {
+                    console.log('🔗 [DEBUG] Looking for next page URL...');
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const response = await (this.axios as any).get(currentUrl);
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const $ = (this.cheerio as any).load(response.data);
+
+                    console.log('🔗 [DEBUG] Searching for elements with selector:', config.pagination.nextPageSelector);
                     const nextPageElement = $(config.pagination.nextPageSelector);
+                    console.log('🔗 [DEBUG] Found', nextPageElement.length, 'elements matching selector');
+
                     const nextPageUrl = nextPageElement.attr('href');
+                    console.log('🔗 [DEBUG] Next page href attribute:', nextPageUrl);
 
                     if (nextPageUrl && nextPageUrl !== currentUrl) {
                         currentUrl = nextPageUrl.startsWith('http') ? nextPageUrl : new URL(nextPageUrl, currentUrl).href;
+                        console.log('🔗 [DEBUG] Next page URL:', currentUrl);
                     } else {
+                        console.log('🔗 [DEBUG] No valid next page URL found, ending pagination');
                         currentUrl = ''; // No more pages
                     }
                 } else {
+                    console.log('🔗 [DEBUG] No pagination selector configured, ending pagination');
                     currentUrl = ''; // No pagination configured
                 }
 
                 pageCount++;
+                console.log(`📊 [DEBUG] Completed page ${pageCount}/${maxPages}`);
             } catch (error) {
-                console.error(`Error scraping page ${currentUrl}:`, error);
+                console.error(`❌ [DEBUG] Error scraping page ${currentUrl}:`, error);
                 break;
             }
         }
 
+        console.log(`\n🎉 [DEBUG] Pagination completed! Total pages scraped: ${pageCount}, Total products: ${allProducts.length}`);
         return allProducts;
     }
 }
