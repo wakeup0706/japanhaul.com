@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
         console.error('Error details:', {
             message: error instanceof Error ? error.message : String(error),
             stack: error instanceof Error ? error.stack : undefined,
-            cause: error instanceof Error && 'cause' in error ? (error as any).cause : undefined
+            cause: error instanceof Error && 'cause' in error ? (error as { cause?: unknown }).cause : undefined
         });
 
         // Handle specific error types

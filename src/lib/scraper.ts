@@ -82,7 +82,7 @@ export class WebScraper {
             const cheerio = await import('cheerio');
             this.axios = axios.default || axios;
             this.cheerio = cheerio;
-        } catch (_error) {
+        } catch {
             console.error('Scraping dependencies not installed. Run: npm install cheerio axios');
             throw new Error('Missing scraping dependencies. Please install cheerio and axios.');
         }
@@ -283,15 +283,9 @@ export class WebScraper {
             console.log('🔍 [DEBUG] Total scraping time:', new Date().toISOString());
 
             return products;
-                        } catch (_error) {
-            console.error(`Error scraping ${config.url}:`, _error);
-            console.error('Error details:', {
-                message: _error instanceof Error ? _error.message : String(_error),
-                stack: _error instanceof Error ? _error.stack : undefined,
-                url: config.url,
-                selectors: config.selectors
-            });
-            throw new Error(`Failed to scrape products from ${config.url}: ${_error instanceof Error ? _error.message : String(_error)}`);
+                        } catch {
+            console.error(`Error scraping ${config.url}`);
+            throw new Error(`Failed to scrape products from ${config.url}`);
         }
     }
 
@@ -327,8 +321,8 @@ export class WebScraper {
                     console.warn('Failed to parse JSON-LD:', parseError);
                 }
             });
-                        } catch (_error) {
-            console.warn('Error extracting from JSON-LD:', _error);
+                        } catch {
+            console.warn('Error extracting from JSON-LD');
         }
 
         return products;
@@ -381,7 +375,7 @@ export class WebScraper {
                     try {
                         const sourceUrlObj = new URL(sourceUrl);
                         imageUrl = new URL(imageUrl, sourceUrlObj.origin).href;
-                    } catch (_error) {
+                    } catch {
                         console.warn('Failed to convert relative image URL:', imageUrl);
                     }
                 }
@@ -436,7 +430,7 @@ export class WebScraper {
                                 try {
                                     const sourceUrlObj = new URL(sourceUrl);
                                     imageUrl = new URL(imageUrl, sourceUrlObj.origin).href;
-                                } catch (_error) {
+                                } catch {
                                     console.warn('Failed to convert relative image URL:', imageUrl);
                                 }
                             }
@@ -478,7 +472,7 @@ export class WebScraper {
                                 try {
                                     const sourceUrlObj = new URL(sourceUrl);
                                     imageUrl = new URL(imageUrl, sourceUrlObj.origin).href;
-                                } catch (_error) {
+                                } catch {
                                     console.warn('Failed to convert relative image URL:', imageUrl);
                                 }
                             }
@@ -521,8 +515,8 @@ export class WebScraper {
                 sourceUrl,
                 condition: this.detectConditionFromText(name + ' ' + description),
             };
-                        } catch (_error) {
-            console.warn('Error parsing JSON-LD product:', _error);
+                        } catch {
+            console.warn('Error parsing JSON-LD product');
             return null;
         }
     }
@@ -622,7 +616,7 @@ export class WebScraper {
                                         const absoluteUrl = new URL(finalUrl, sourceUrlObj.origin).href;
                                         console.log('Found image URL:', absoluteUrl);
                                         return absoluteUrl;
-                                    } catch (_error) {
+                                    } catch {
                                         console.warn('Failed to convert relative image URL:', finalUrl);
                                     }
                                 } else {
@@ -637,8 +631,8 @@ export class WebScraper {
 
             console.log('No image found in element:', $(element).html().substring(0, 200) + '...');
             return undefined;
-                        } catch (_error) {
-            console.warn('Error extracting image from HTML:', _error);
+                        } catch {
+            console.warn('Error extracting image from HTML');
             return undefined;
         }
     }
@@ -703,7 +697,7 @@ export class WebScraper {
                 if (imageUrl && !imageUrl.startsWith('http')) {
                     try {
                         imageUrl = new URL(imageUrl, config.url).href;
-                    } catch (_error) {
+                    } catch {
                         console.warn('Failed to convert relative image URL:', imageUrl);
                     }
                 }
@@ -739,8 +733,8 @@ export class WebScraper {
                 isSoldOut,
                 labels,
             };
-                        } catch (_error) {
-            console.error('Error extracting product data:', _error);
+                        } catch {
+            console.error('Error extracting product data');
             return null;
         }
     }
@@ -1101,10 +1095,10 @@ export async function testScrapingConfig(config: ScrapingConfig): Promise<{ succ
             success: true,
             sampleProducts: products.slice(0, 3), // Return first 3 products as sample
         };
-                        } catch (_error) {
+                        } catch {
         return {
             success: false,
-            error: _error instanceof Error ? _error.message : 'Unknown error occurred',
+            error: 'Unknown error occurred',
         };
     }
 }
