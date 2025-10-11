@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { Product } from '@/app/_data/products';
+import type { ScrapedProduct } from '@/lib/scraper';
 
 // In-memory storage for scraped products (in production, use a database)
 let scrapedProducts: Product[] = [];
