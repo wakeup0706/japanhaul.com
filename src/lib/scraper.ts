@@ -244,20 +244,21 @@ export class WebScraper {
         console.log('🔍 [DEBUG] Next page selector:', config.pagination?.nextPageSelector);
         console.log('🔍 [DEBUG] Max pages:', config.pagination?.maxPages);
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const response = await (this.axios as any).get(config.url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.5',
-                'Accept-Encoding': 'gzip, deflate',
-                'Connection': 'keep-alive',
-                'Upgrade-Insecure-Requests': '1',
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache',
-            },
-            timeout: 8000,
-        });
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const response = await (this.axios as any).get(config.url, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.5',
+                    'Accept-Encoding': 'gzip, deflate',
+                    'Connection': 'keep-alive',
+                    'Upgrade-Insecure-Requests': '1',
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache',
+                },
+                timeout: 8000,
+            });
 
             console.log('🔍 [DEBUG] HTTP request completed, status:', response.status);
             console.log('🔍 [DEBUG] Response data length:', response.data?.length || 'unknown');
@@ -454,7 +455,7 @@ export class WebScraper {
                     console.warn('Failed to parse JSON-LD:', parseError);
                 }
             });
-                        } catch {
+        } catch {
             console.warn('Error extracting from JSON-LD');
         }
 
@@ -648,7 +649,7 @@ export class WebScraper {
                 sourceUrl,
                 condition: this.detectConditionFromText(name + ' ' + description),
             };
-                        } catch {
+        } catch {
             console.warn('Error parsing JSON-LD product');
             return null;
         }
@@ -764,7 +765,7 @@ export class WebScraper {
 
             console.log('No image found in element:', $(element).html().substring(0, 200) + '...');
             return undefined;
-                        } catch {
+        } catch {
             console.warn('Error extracting image from HTML');
             return undefined;
         }
@@ -866,7 +867,7 @@ export class WebScraper {
                 isSoldOut,
                 labels,
             };
-                        } catch {
+        } catch {
             console.error('Error extracting product data');
             return null;
         }
