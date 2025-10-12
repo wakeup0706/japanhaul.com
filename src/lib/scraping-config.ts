@@ -187,15 +187,15 @@ export const scrapingConfigs = {
     amnibus: (baseUrl: string): ScrapingConfig => ({
         url: baseUrl,
         selectors: {
-            productList: '.product-list, .list-container, main',
-            productCard: 'a[href*="/products/detail/"]',
-            title: '.list-name',
-            price: '.list-price',
-            image: '.list-image img',
-            description: '.list-description',
+            productList: '.product-list, .list-container, main, .products',
+            productCard: 'a[href*="/products/detail/"], .product-item, .item',
+            title: '.list-name, .product-title, h3, h4',
+            price: '.list-price, .price, .product-price',
+            image: '.list-image img, .product-image img, img',
+            description: '.list-description, .product-description',
         },
         pagination: {
-            nextPageSelector: 'a[href*="pageno="], .pagination a, .next',
+            nextPageSelector: 'a[href*="pageno="], .pagination a[href*="?pageno="], .next[href*="pageno="]',
             maxPages: 3
         }
     }),

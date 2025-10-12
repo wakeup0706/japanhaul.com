@@ -100,26 +100,149 @@ export class WebScraper {
             console.log('🔍 [DEBUG] Making HTTP request to:', config.url);
             console.log('🔍 [DEBUG] Using selectors:', config.selectors);
 
-            // Randomize headers to avoid detection
-            const userAgents = [
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0',
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/121.0'
-            ];
-
-            const randomUserAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
-
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const response = await (this.axios as any).get(config.url, {
                 headers: {
-                    'User-Agent': randomUserAgent,
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
                     'Accept-Language': 'en-US,en;q=0.5',
                     'Accept-Encoding': 'gzip, deflate',
                     'Connection': 'keep-alive',
                     'Upgrade-Insecure-Requests': '1',
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache',
+                },
+                timeout: 8000,
+            });
+
+            console.log('🔍 [DEBUG] HTTP request completed, status:', response.status);
+            console.log('🔍 [DEBUG] Response data length:', response.data?.length || 'unknown');
+            console.log('🔍 [DEBUG] HTTP request took:', new Date().toISOString());
+
+            const $ = this.cheerio.load(response.data);
+            const products: ScrapedProduct[] = [];
+
+            // First, try to extract products from JSON-LD structured data
+            const jsonLdProducts = this.extractFromJsonLd($, config.url, response.data);
+            products.push(...jsonLdProducts);
+
+            // If we didn't get products from JSON-LD, fall back to HTML parsing
+            if (products.length === 0) {
+                console.log('No products found in JSON-LD, falling back to HTML parsing...');
+
+                // If productList selector is provided, find products within that container
+                let productElements;
+                if (config.selectors.productList) {
+                    const productListElement = $(config.selectors.productList);
+                    productElements = config.selectors.productCard
+                        ? productListElement.find(config.selectors.productCard)
+                        : productListElement.children();
+                } else {
+                    // Otherwise, look for product cards directly
+                    productElements = $(config.selectors.productCard || '.product, [class*="product"], article');
+                }
+
+                console.log('🔍 [DEBUG] Found', productElements.length, 'product elements with selector:', config.selectors.productCard || '.product, [class*="product"], article');
+
+                productElements.each((index: number, element: cheerio.Element) => {
+                    const product = this.extractProductData($, element, config, index);
+                    if (product) {
+                        products.push(product);
+                    }
+                });
+            }
+
+            // If we got products from JSON-LD but they don't have images, try to extract from HTML
+            if (products.length > 0 && products.every(p => !p.imageUrl)) {
+                console.log('Products found but no images in JSON-LD, trying HTML extraction...');
+
+                // If productList selector is provided, find products within that container
+                let productElements;
+                if (config.selectors.productList) {
+                    const productListElement = $(config.selectors.productList);
+                    productElements = config.selectors.productCard
+                        ? productListElement.find(config.selectors.productCard)
+                        : productListElement.children();
+                } else {
+                    // Otherwise, look for product cards directly
+                    productElements = $(config.selectors.productCard || '.product, [class*="product"], article');
+                }
+
+                console.log('Found', productElements.length, 'product elements for image extraction');
+
+                productElements.each((index: number, element: cheerio.Element) => {
+                    if (index < products.length) {
+                        const imageUrl = this.extractImageFromHtml($, element, config);
+                        if (imageUrl) {
+                            products[index].imageUrl = imageUrl;
+                            console.log('✅ [DEBUG] Added image URL for product', index, ':', imageUrl);
+                        } else {
+                            console.log('❌ [DEBUG] No image found for product', index);
+                        }
+                    }
+                });
+            }
+
+            // Final fallback: if still no images, try to find any image on the page
+            if (products.length > 0 && products.every(p => !p.imageUrl)) {
+                console.log('Still no images found, trying page-wide image search...');
+
+                // Look for any image with data-master attribute (lazy loaded)
+                const allLazyImages = $('[data-master]');
+                console.log('Found', allLazyImages.length, 'elements with data-master attribute');
+
+                if (allLazyImages.length > 0) {
+                    for (let i = 0; i < Math.min(5, allLazyImages.length); i++) {
+                        const img = $(allLazyImages[i]);
+                        let imgUrl: string | undefined = img.attr('data-master');
+                        console.log('Checking image', i, 'data-master:', imgUrl);
+
+                        if (imgUrl && !imgUrl.startsWith('data:image')) {
+                            // Handle Shopify {width} placeholder in URLs
+                            if (imgUrl.includes('{width}')) {
+                                imgUrl = imgUrl.replace('{width}', '800');
+                                console.log('🔄 [DEBUG] Replaced {width} placeholder in fallback image:', imgUrl);
+                            }
+
+                            // Use the first available image for all products as fallback
+                            products.forEach(product => {
+                                if (!product.imageUrl) {
+                                    product.imageUrl = imgUrl && imgUrl.startsWith('http') ? imgUrl : `https://amnibus.com${imgUrl || ''}`;
+                                }
+                            });
+                            console.log('✅ [DEBUG] Applied fallback image to all products:', imgUrl);
+                            break;
+                        }
+                    }
+                } else {
+                    console.log('No elements with data-master found, checking for srcset...');
+                    // Try srcset attributes as well
+                    const srcsetImages = $('[srcset], [data-srcset]');
+                    console.log('Found', srcsetImages.length, 'elements with srcset attributes');
+                }
+            }
+
+            // Log final results
+            const productsWithImages = products.filter(p => p.imageUrl).length;
+            const productsWithoutImages = products.filter(p => !p.imageUrl).length;
+            console.log(`Scraping completed: ${products.length} products, ${productsWithImages} with images, ${productsWithoutImages} without images`);
+            console.log('🔍 [DEBUG] Total scraping time:', new Date().toISOString());
+
+            return products;
+        } catch (error) {
+            console.error(`Error scraping ${config.url}:`, error);
+            throw new Error(`Failed to scrape products: ${error}`);
+        }
+    }
+
+    /**
+     * Scrape multiple pages if pagination is configured
+     */
+    async scrapeMultiplePages(config: ScrapingConfig): Promise<ScrapedProduct[]> {
+        console.log('🔍 [DEBUG] Starting pagination scraping...');
+        console.log('🔍 [DEBUG] Base URL:', config.url);
+        console.log('🔍 [DEBUG] Next page selector:', config.pagination?.nextPageSelector);
+        console.log('🔍 [DEBUG] Max pages:', config.pagination?.maxPages);
                     'Cache-Control': 'no-cache',
                     'Pragma': 'no-cache',
                 },
