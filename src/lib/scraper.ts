@@ -243,11 +243,21 @@ export class WebScraper {
         console.log('🔍 [DEBUG] Base URL:', config.url);
         console.log('🔍 [DEBUG] Next page selector:', config.pagination?.nextPageSelector);
         console.log('🔍 [DEBUG] Max pages:', config.pagination?.maxPages);
-                    'Cache-Control': 'no-cache',
-                    'Pragma': 'no-cache',
-                },
-                timeout: 8000,
-            });
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const response = await (this.axios as any).get(config.url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Encoding': 'gzip, deflate',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
+            },
+            timeout: 8000,
+        });
 
             console.log('🔍 [DEBUG] HTTP request completed, status:', response.status);
             console.log('🔍 [DEBUG] Response data length:', response.data?.length || 'unknown');
@@ -406,9 +416,9 @@ export class WebScraper {
             console.log('🔍 [DEBUG] Total scraping time:', new Date().toISOString());
 
             return products;
-                        } catch {
-            console.error(`Error scraping ${config.url}`);
-            throw new Error(`Failed to scrape products from ${config.url}`);
+        } catch (error) {
+            console.error(`Error scraping ${config.url}:`, error);
+            throw new Error(`Failed to scrape products: ${error}`);
         }
     }
 
@@ -623,7 +633,7 @@ export class WebScraper {
             }
 
             // Generate unique ID using name and URL hash
-            const id = `jsonld_${Buffer.from(name + sourceUrl).toString('base64').slice(0, 16)}`;
+            const id = `jsonld_${btoa(name + sourceUrl).slice(0, 16)}`;
 
             return {
                 id,
@@ -947,125 +957,6 @@ export class WebScraper {
         return isNaN(price) ? 0 : price;
     }
 
-    /**
-     * Scrape multiple pages if pagination is configured
-     */
-    async scrapeMultiplePages(config: ScrapingConfig): Promise<ScrapedProduct[]> {
-        console.log('🔍 [DEBUG] Starting pagination scraping...');
-        console.log('🔍 [DEBUG] Base URL:', config.url);
-        console.log('🔍 [DEBUG] Next page selector:', config.pagination ? config.pagination.nextPageSelector : 'none');
-        console.log('🔍 [DEBUG] Max pages:', config.pagination ? config.pagination.maxPages : 'none');
-
-        const allProducts: ScrapedProduct[] = [];
-        let currentUrl = config.url;
-        let pageCount = 0;
-        const maxPages = config.pagination ? config.pagination.maxPages || 5 : 5;
-
-        while (currentUrl && pageCount < maxPages) {
-            console.log(`\n📄 [DEBUG] Scraping page ${pageCount + 1}/${maxPages}`);
-            console.log('📄 [DEBUG] Current URL:', currentUrl);
-
-            try {
-                const products = await this.scrapeProducts({ ...config, url: currentUrl });
-                console.log(`✅ [DEBUG] Found ${products.length} products on page ${pageCount + 1}`);
-                allProducts.push(...products);
-
-                console.log(`📊 [DEBUG] Total products so far: ${allProducts.length}`);
-
-                // Find next page URL
-                if (config.pagination && config.pagination.nextPageSelector) {
-                    console.log('🔗 [DEBUG] Looking for next page URL...');
-                    // Randomize headers for pagination requests too
-                    const paginationUserAgents = [
-                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0',
-                        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/121.0'
-                    ];
-
-                    const randomPaginationUserAgent = paginationUserAgents[Math.floor(Math.random() * paginationUserAgents.length)];
-
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const response = await (this.axios as { get: (url: string, config: { timeout: number; headers: Record<string, string> }) => Promise<any> }).get(currentUrl, {
-                        timeout: 8000,
-                        headers: {
-                            'User-Agent': randomPaginationUserAgent,
-                            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                            'Accept-Language': 'en-US,en;q=0.5',
-                            'Accept-Encoding': 'gzip, deflate',
-                            'Connection': 'keep-alive',
-                            'Upgrade-Insecure-Requests': '1',
-                            'Cache-Control': 'no-cache',
-                            'Pragma': 'no-cache',
-                        }
-                    });
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const $ = (this.cheerio as any).load(response.data);
-
-                    console.log('🔗 [DEBUG] Searching for elements with selector:', config.pagination.nextPageSelector);
-                    const nextPageElement = $(config.pagination.nextPageSelector);
-                    console.log('🔗 [DEBUG] Found', nextPageElement.length, 'elements matching selector');
-
-                    // Debug: List all found elements and their hrefs
-                    nextPageElement.each((i: number, elem: Element) => {
-                        const href = $(elem).attr('href');
-                        console.log(`🔗 [DEBUG] Element ${i} href:`, href);
-                    });
-
-                    const nextPageUrl = nextPageElement.first().attr('href');
-                    console.log('🔗 [DEBUG] First element href attribute:', nextPageUrl);
-
-                    if (nextPageUrl && nextPageUrl !== currentUrl) {
-                        currentUrl = nextPageUrl.startsWith('http') ? nextPageUrl : new URL(nextPageUrl, currentUrl).href;
-                        console.log('🔗 [DEBUG] Constructed next page URL:', currentUrl);
-                    } else {
-                        console.log('🔗 [DEBUG] No valid next page URL found, ending pagination');
-                        currentUrl = ''; // No more pages
-                    }
-                } else {
-                    console.log('🔗 [DEBUG] No pagination selector configured, ending pagination');
-                    currentUrl = ''; // No pagination configured
-                }
-
-                pageCount++;
-                console.log(`📊 [DEBUG] Completed page ${pageCount}/${maxPages}`);
-
-                // Add delay between requests to avoid overwhelming the server
-                if (pageCount < maxPages && currentUrl) {
-                    console.log(`⏱️ [DEBUG] Waiting 3 seconds before next page...`);
-                    await new Promise(resolve => setTimeout(resolve, 3000));
-                }
-            } catch (error: unknown) {
-                console.error(`❌ [DEBUG] Error scraping page ${pageCount + 1}/${maxPages} (${currentUrl}):`, error);
-
-                // Type guard to check if error has expected properties
-                const isErrorWithCode = (err: unknown): err is { code?: string; message?: string; response?: { status?: number } } => {
-                    return typeof err === 'object' && err !== null;
-                };
-
-                // Check if it's a timeout error
-                if (isErrorWithCode(error) && (error.code === 'ECONNABORTED' || (error.message && error.message.includes('timeout')))) {
-                    console.error(`⏱️ [DEBUG] TIMEOUT ERROR: Page ${pageCount + 1} timed out after 8 seconds`);
-                    console.error(`⏱️ [DEBUG] This suggests the page is extremely slow to respond`);
-                } else if (isErrorWithCode(error) && error.response && error.response.status === 403) {
-                    console.error(`🚫 [DEBUG] BLOCKED: Page ${pageCount + 1} returned 403 Forbidden`);
-                    console.error(`🚫 [DEBUG] This suggests server-side blocking`);
-                } else if (isErrorWithCode(error) && error.response && error.response.status === 429) {
-                    console.error(`🚦 [DEBUG] RATE LIMITED: Page ${pageCount + 1} returned 429 Too Many Requests`);
-                    console.error(`🚦 [DEBUG] This suggests rate limiting`);
-                } else {
-                    console.error(`❓ [DEBUG] UNKNOWN ERROR: Page ${pageCount + 1} failed with:`, isErrorWithCode(error) ? (error as { message?: string }).message || String(error) : String(error));
-                }
-
-                console.error(`❌ [DEBUG] Previous pages worked, this specific page failed`);
-                break;
-            }
-        }
-
-        console.log(`\n🎉 [DEBUG] Pagination completed! Total pages scraped: ${pageCount}, Total products: ${allProducts.length}`);
-        return allProducts;
-    }
 
     /**
      * Scrape products from a specific range of pages (batch processing)
@@ -1218,7 +1109,7 @@ export async function testScrapingConfig(config: ScrapingConfig): Promise<{ succ
             success: true,
             sampleProducts: products.slice(0, 3), // Return first 3 products as sample
         };
-                        } catch {
+    } catch {
         return {
             success: false,
             error: 'Unknown error occurred',
