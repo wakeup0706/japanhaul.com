@@ -6,7 +6,7 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 const nextConfig = {
 	reactStrictMode: true,
 	images: {
-		domains: ['anime-store.jp', 'cdn.shopify.com'],
+		domains: ['anime-store.jp', 'cdn.shopify.com', 'cdn.amnibus.com'],
 		remotePatterns: [
 			{
 				protocol: 'https',
@@ -15,6 +15,10 @@ const nextConfig = {
 			{
 				protocol: 'https',
 				hostname: 'cdn.shopify.com',
+			},
+			{
+				protocol: 'https',
+				hostname: 'cdn.amnibus.com',
 			},
 		],
 	},
