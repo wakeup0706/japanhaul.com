@@ -45,7 +45,7 @@ let lastFetchTime: number = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 /**
- * Fetch scraped products from the API
+ * Fetch scraped products from the Firestore database
  */
 export async function getScrapedProducts(): Promise<Product[]> {
     // Return cached products if they're still fresh
@@ -54,30 +54,66 @@ export async function getScrapedProducts(): Promise<Product[]> {
     }
 
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/products/scraped`);
+        // Fetch from Firebase database instead of in-memory API
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/products/db`);
 
         if (!response.ok) {
-            console.warn('Failed to fetch scraped products:', response.statusText);
+            console.warn('Failed to fetch products from database:', response.statusText);
             return [];
         }
 
         const data = await response.json();
-        scrapedProductsCache = data.products || [];
+        
+        // Transform database products to match Product type
+        const dbProducts = (data.products || []).map((p: {
+            id: string;
+            title: string;
+            price: number;
+            originalPrice?: number;
+            brand: string;
+            category: string;
+            imageUrl?: string;
+            description?: string;
+            availability: 'in' | 'out';
+            sourceUrl: string;
+            condition?: "new" | "used" | "refurbished";
+            isSoldOut?: boolean;
+            labels?: string[];
+        }) => ({
+            id: p.id,
+            title: p.title,
+            price: p.price,
+            compareAt: p.originalPrice,
+            brand: p.brand,
+            type: p.category,
+            availability: p.availability,
+            labels: p.labels,
+            condition: p.condition,
+            isSoldOut: p.isSoldOut,
+            sourceUrl: p.sourceUrl,
+            imageUrl: p.imageUrl,
+            description: p.description,
+        }));
+
+        scrapedProductsCache = dbProducts;
         lastFetchTime = Date.now();
 
         return scrapedProductsCache || [];
     } catch (error) {
-        console.error('Error fetching scraped products:', error);
+        console.error('Error fetching products from database:', error);
         return [];
     }
 }
 
 /**
- * Get all products (hardcoded + scraped)
+ * Get all products (hardcoded + scraped from database)
  */
 export async function getAllProducts(): Promise<Product[]> {
     const scrapedProducts = await getScrapedProducts();
-    return [...products, ...scrapedProducts];
+    
+    // Return only scraped products from database (no hardcoded products)
+    // If you want to include hardcoded products as fallback, use: [...products, ...scrapedProducts]
+    return scrapedProducts.length > 0 ? scrapedProducts : products;
 }
 
 /**

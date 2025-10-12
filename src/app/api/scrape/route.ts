@@ -58,13 +58,20 @@ export async function POST(request: NextRequest) {
         if (startPage !== undefined && endPage !== undefined) {
             console.log(`🔄 [BATCH] Processing pages ${startPage} to ${endPage}`);
             
-            // Validate page range
+            // Validate page range - stricter limits for production (Netlify timeout constraints)
             const pageCount = endPage - startPage + 1;
-            if (pageCount > 50) {
+            const isProduction = process.env.NODE_ENV === 'production';
+            const MAX_PAGES = isProduction ? 3 : 50; // 3 pages max on Netlify (~26 seconds), 50 for local testing
+            
+            if (pageCount > MAX_PAGES) {
                 return NextResponse.json(
                     { 
                         error: 'Page range too large',
-                        details: 'Maximum 50 pages per request. Please split into smaller batches.'
+                        details: isProduction 
+                            ? `Maximum ${MAX_PAGES} pages per batch on Netlify. Please reduce your range or run multiple smaller batches.`
+                            : `Maximum ${MAX_PAGES} pages per request. Please split into smaller batches.`,
+                        maxPages: MAX_PAGES,
+                        suggestion: 'For larger scrapes, run multiple batches (e.g., pages 1-3, then 4-6, etc.) or use scheduled scraping.'
                     },
                     { status: 400 }
                 );
