@@ -1,0 +1,27 @@
+# Netlify configuration for Japan Haul
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+# Function timeout configuration
+[functions]
+  # Increase function timeout to 26 seconds (Netlify's max for free tier)
+  # For Pro tier, you can increase this up to 300 seconds
+  timeout = 26
+
+# API route specific configuration
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Redirect configuration
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# Environment variables (these should be set in Netlify UI)
+# [build.environment]
+#   NEXT_PUBLIC_FIREBASE_API_KEY = ""
+#   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN = ""
+#   # ... etc

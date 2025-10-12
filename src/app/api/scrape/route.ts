@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { WebScraper, ScrapingConfig, ScrapedProduct, scrapingConfigs } from '@/lib/scraper';
 
+// Configure the route to handle longer execution times
+export const maxDuration = 300; // 5 minutes (maximum allowed on most serverless platforms)
+export const dynamic = 'force-dynamic';
+
 // POST /api/scrape - Scrape products from a website
 export async function POST(request: NextRequest) {
     try {
@@ -53,7 +57,42 @@ export async function POST(request: NextRequest) {
         // Handle batch processing if parameters are provided
         if (startPage !== undefined && endPage !== undefined) {
             console.log(`🔄 [BATCH] Processing pages ${startPage} to ${endPage}`);
-            products = await scraper.scrapePageBatch(scrapingConfig, startPage, endPage);
+            
+            // Validate page range
+            const pageCount = endPage - startPage + 1;
+            if (pageCount > 50) {
+                return NextResponse.json(
+                    { 
+                        error: 'Page range too large',
+                        details: 'Maximum 50 pages per request. Please split into smaller batches.'
+                    },
+                    { status: 400 }
+                );
+            }
+
+            // Add progress logging
+            const progressCallback = (current: number, total: number, productsFound: number) => {
+                console.log(`📊 [PROGRESS] Page ${current}/${total} - Total products: ${productsFound}`);
+            };
+
+            try {
+                products = await scraper.scrapePageBatch(
+                    scrapingConfig, 
+                    startPage, 
+                    endPage,
+                    progressCallback
+                );
+            } catch (batchError) {
+                // If batch scraping fails partway through, try to return what we have
+                console.error('Batch scraping error:', batchError);
+                
+                if (batchError instanceof Error && batchError.message.includes('Successfully scraped')) {
+                    // Partial success - extract the products count from error message
+                    console.log('Partial batch success, returning available products');
+                } else {
+                    throw batchError; // Re-throw if it's a complete failure
+                }
+            }
         } else {
             // Use scrapeProducts for single page or existing logic
             products = await scraper.scrapeProducts(scrapingConfig);

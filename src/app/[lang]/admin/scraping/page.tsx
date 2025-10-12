@@ -412,6 +412,26 @@ export default function ScrapingAdminPage() {
                                     </div>
                                 </div>
                             )}
+
+                            {useBatchProcessing && (endPage - startPage + 1) > 5 && (
+                                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                                    <div className="flex items-start gap-2">
+                                        <svg className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                        </svg>
+                                        <div className="text-sm text-yellow-800">
+                                            <p className="font-semibold mb-1">⚠️ Large batch detected ({endPage - startPage + 1} pages)</p>
+                                            <p className="mb-2">Scraping {endPage - startPage + 1} pages may timeout on Netlify free tier (26s limit).</p>
+                                            <p className="font-semibold">Recommended approach:</p>
+                                            <ul className="list-disc ml-5 mt-1 space-y-1">
+                                                <li>Split into batches of <strong>3-5 pages</strong> each</li>
+                                                <li>Example: Pages 1-5, then 6-10, then 11-15</li>
+                                                <li>All products will accumulate in the list below</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <button
