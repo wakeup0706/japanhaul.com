@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
+    "@stripe/react-stripe-js": "^5.2.0",
+    "@stripe/stripe-js": "^8.0.0",
     "@types/cheerio": "^0.22.35",
     "axios": "^1.12.2",
     "cheerio": "^1.1.2",
@@ -18,7 +20,8 @@
     "next-intl": "^4.0.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "resend": "^6.1.2"
+    "resend": "^6.1.2",
+    "stripe": "^19.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

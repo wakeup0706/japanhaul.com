@@ -21,7 +21,8 @@ import {
     updateDoc,
     writeBatch,
     Timestamp,
-    QueryConstraint
+    QueryConstraint,
+    startAfter
 } from 'firebase/firestore';
 
 // TypeScript interfaces
@@ -33,6 +34,7 @@ export interface ScrapedProductDB {
     brand: string;
     category: string;
     imageUrl?: string;
+    images?: string[]; // gallery images from detail page
     description?: string;
     availability: 'in' | 'out';
     sourceUrl: string;
@@ -40,6 +42,14 @@ export interface ScrapedProductDB {
     condition?: "new" | "used" | "refurbished";
     isSoldOut?: boolean;
     labels?: string[];
+    // Detail/enrichment fields
+    specs?: string[]; // parsed bullet points/specifications from detail page
+    shippingSchedule?: string; // e.g., "late January 2026"
+    reservationEndDate?: string; // ISO or human string
+    preorderOpen?: boolean; // Now accepting reservations
+    singlePriceJpy?: number;
+    boxPriceJpy?: number;
+    taxIncluded?: boolean;
     
     // Metadata
     scrapedAt: Timestamp;
@@ -160,33 +170,120 @@ export async function getAllScrapedProducts(
     }
 ): Promise<ScrapedProductDB[]> {
     try {
-        const constraints: QueryConstraint[] = [];
+        // Simplified query without composite index requirement
+        // Just get all products and filter in memory
+        const q = query(collection(db, SCRAPED_PRODUCTS_COLLECTION));
+        const querySnapshot = await getDocs(q);
         
+        // Map to ensure id matches Firestore document ID
+        let products = querySnapshot.docs.map(doc => {
+            const data = doc.data() as ScrapedProductDB;
+            return {
+                ...data,
+                id: doc.id, // Use Firestore document ID (p_xxxxx)
+                originalId: data.id, // Preserve original product ID
+            } as ScrapedProductDB;
+        });
+        
+        // Apply filters in memory
         if (filters?.sourceSite) {
-            constraints.push(where('sourceSite', '==', filters.sourceSite));
+            products = products.filter(p => p.sourceSite === filters.sourceSite);
         }
         
         if (filters?.availability) {
-            constraints.push(where('availability', '==', filters.availability));
+            products = products.filter(p => p.availability === filters.availability);
         }
         
         if (filters?.isActive !== undefined) {
-            constraints.push(where('isActive', '==', filters.isActive));
+            products = products.filter(p => p.isActive === filters.isActive);
         }
         
-        constraints.push(orderBy('scrapedAt', 'desc'));
+        // Sort by scrapedAt descending
+        products.sort((a, b) => {
+            const timeA = a.scrapedAt?.toMillis() || 0;
+            const timeB = b.scrapedAt?.toMillis() || 0;
+            return timeB - timeA;
+        });
         
+        // Apply limit
         if (filters?.limit) {
-            constraints.push(limit(filters.limit));
+            products = products.slice(0, filters.limit);
         }
         
-        const q = query(collection(db, SCRAPED_PRODUCTS_COLLECTION), ...constraints);
-        const querySnapshot = await getDocs(q);
+        // Ensure id matches document ID
+        products = products.map((p, index, arr) => {
+            // Since we don't have document reference here, keep existing id
+            return p;
+        });
         
-        return querySnapshot.docs.map(doc => doc.data() as ScrapedProductDB);
+        return products;
     } catch (error) {
         console.error('Error getting scraped products from Firestore:', error);
         throw error;
+    }
+}
+
+/**
+ * Get a page of scraped products using cursor-based pagination.
+ * Ordered by scrapedAt desc, then id desc for tie-breaker.
+ */
+export async function getScrapedProductsPage(limitCount: number = 48, cursor?: { ts: number; id: string }): Promise<{
+    products: ScrapedProductDB[];
+    nextCursor: { ts: number; id: string } | null;
+}> {
+    try {
+        // Since scrapedAt is stored as ISO string (not Timestamp), we can't reliably order by it
+        // Instead, order by id (descending) which is based on URL hash
+        const constraints: QueryConstraint[] = [
+            orderBy('id', 'desc'),
+            limit(limitCount),
+        ];
+
+        if (cursor && cursor.id) {
+            // Just use the ID for pagination
+            constraints.push(startAfter(cursor.id));
+        }
+
+        const q = query(collection(db, SCRAPED_PRODUCTS_COLLECTION), ...constraints);
+        const snap = await getDocs(q);
+
+        // Map products and ensure the id field matches the Firestore document ID
+        const products = snap.docs.map(d => {
+            const data = d.data() as ScrapedProductDB;
+            return {
+                ...data,
+                id: d.id, // Use Firestore document ID (p_xxxxx) instead of field id
+                originalId: data.id, // Preserve original ID if needed
+            } as ScrapedProductDB;
+        });
+
+        // Compute next cursor from last doc
+        const lastDoc = snap.docs[snap.docs.length - 1];
+        let nextCursor = null;
+        
+        if (lastDoc && snap.docs.length === limitCount) {
+            // Only provide cursor if we got a full page (means there might be more)
+            const lastData = lastDoc.data() as ScrapedProductDB;
+            nextCursor = {
+                ts: 0, // Not used anymore, but keep for compatibility
+                id: lastData.id,
+            };
+        }
+
+        return { products, nextCursor };
+    } catch (error: any) {
+        console.error('Error getting paginated products from Firestore:', error);
+        
+        // Simple fallback: get all and return first page
+        try {
+            const allQuery = query(collection(db, SCRAPED_PRODUCTS_COLLECTION), limit(limitCount));
+            const snap = await getDocs(allQuery);
+            const products = snap.docs.map(d => d.data() as ScrapedProductDB);
+            return { products, nextCursor: null };
+        } catch (fallbackError) {
+            console.error('Fallback also failed:', fallbackError);
+            throw error;
+        }
     }
 }
 
@@ -199,7 +296,13 @@ export async function getScrapedProductById(productId: string): Promise<ScrapedP
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
-            return docSnap.data() as ScrapedProductDB;
+            const data = docSnap.data() as ScrapedProductDB;
+            // Ensure id matches Firestore document ID
+            return {
+                ...data,
+                id: docSnap.id, // Use Firestore document ID (p_xxxxx)
+                originalId: data.id, // Preserve original product ID
+            } as ScrapedProductDB;
         }
         
         return null;
@@ -260,6 +363,23 @@ export async function clearAllScrapedProducts(): Promise<number> {
         return querySnapshot.size;
     } catch (error) {
         console.error('Error clearing products:', error);
+        throw error;
+    }
+}
+
+/**
+ * Update/enrich a scraped product with detail fields
+ */
+export async function updateScrapedProductDetails(productId: string, updates: Partial<ScrapedProductDB>): Promise<void> {
+    try {
+        const ref = doc(db, SCRAPED_PRODUCTS_COLLECTION, productId);
+        await updateDoc(ref, {
+            ...updates,
+            lastUpdated: Timestamp.now(),
+        } as Record<string, unknown>);
+        console.log(`✅ Enriched product ${productId} with detail fields`);
+    } catch (error) {
+        console.error('Error updating product details:', error);
         throw error;
     }
 }
@@ -357,11 +477,24 @@ export async function getScrapingJobById(jobId: string): Promise<ScrapingJob | n
 /**
  * Generate a consistent product ID from URL and title
  */
-function generateProductId(sourceUrl: string, title: string): string {
-    // Create a hash-like ID from URL and title
-    const combined = `${sourceUrl}_${title}`.toLowerCase().replace(/[^a-z0-9]/g, '_');
-    // Truncate to reasonable length and add timestamp suffix for uniqueness
-    return combined.substring(0, 50) + '_' + Date.now().toString(36);
+function generateProductId(sourceUrl: string, _title: string): string {
+    // Create a stable, deterministic ID from the normalized URL
+    // 1) Normalize URL (drop query/hash) so same product produces same ID across scrapes
+    let normalized = sourceUrl;
+    try {
+        const u = new URL(sourceUrl);
+        normalized = `${u.origin}${u.pathname}`.toLowerCase();
+    } catch {
+        normalized = sourceUrl.toLowerCase();
+    }
+
+    // 2) Simple fast hash (djb2 variant) -> base36 string
+    let hash = 5381;
+    for (let i = 0; i < normalized.length; i++) {
+        hash = ((hash << 5) + hash) ^ normalized.charCodeAt(i);
+    }
+    const id = Math.abs(hash >>> 0).toString(36);
+    return `p_${id}`;
 }
 
 /**

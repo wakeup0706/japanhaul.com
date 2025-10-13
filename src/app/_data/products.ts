@@ -47,7 +47,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 /**
  * Fetch scraped products from the Firestore database
  */
-export async function getScrapedProducts(): Promise<Product[]> {
+export async function getScrapedProducts(limit: number = 48): Promise<Product[]> {
     // Return cached products if they're still fresh
     if (scrapedProductsCache && (Date.now() - lastFetchTime) < CACHE_DURATION) {
         return scrapedProductsCache;
@@ -55,14 +55,16 @@ export async function getScrapedProducts(): Promise<Product[]> {
 
     try {
         // Fetch from Firebase database instead of in-memory API
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/products/db`);
+        // Add language parameter for translation (default to 'en' if not specified)
+        const lang = typeof window !== 'undefined' ? (document.documentElement.lang || 'en') : 'en';
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/products/db?limit=${encodeURIComponent(String(limit))}&lang=${lang}`);
 
         if (!response.ok) {
             console.warn('Failed to fetch products from database:', response.statusText);
             return [];
         }
 
-        const data = await response.json();
+    const data = await response.json();
         
         // Transform database products to match Product type
         const dbProducts = (data.products || []).map((p: {
@@ -95,7 +97,7 @@ export async function getScrapedProducts(): Promise<Product[]> {
             description: p.description,
         }));
 
-        scrapedProductsCache = dbProducts;
+    scrapedProductsCache = dbProducts;
         lastFetchTime = Date.now();
 
         return scrapedProductsCache || [];
@@ -108,12 +110,58 @@ export async function getScrapedProducts(): Promise<Product[]> {
 /**
  * Get all products (hardcoded + scraped from database)
  */
-export async function getAllProducts(): Promise<Product[]> {
-    const scrapedProducts = await getScrapedProducts();
+export async function getAllProducts(limit: number = 48): Promise<Product[]> {
+    const scrapedProducts = await getScrapedProducts(limit);
+    
+    console.log('📊 getAllProducts - Scraped products count:', scrapedProducts.length);
+    if (scrapedProducts.length > 0) {
+        console.log('✅ Sample scraped product:', scrapedProducts[0]);
+    }
     
     // Return only scraped products from database (no hardcoded products)
     // If you want to include hardcoded products as fallback, use: [...products, ...scrapedProducts]
     return scrapedProducts.length > 0 ? scrapedProducts : products;
+}
+
+/**
+ * Get one page of products from the server (API) using cursor.
+ */
+export async function getProductsPage(limit: number = 48, cursor?: { ts: number; id: string }): Promise<{
+    products: Product[];
+    nextCursor: { ts: number; id: string } | null;
+}> {
+    const url = new URL(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/products/db`);
+    url.searchParams.set('limit', String(limit));
+    if (cursor) {
+        url.searchParams.set('cursorTs', String(cursor.ts));
+        url.searchParams.set('cursorId', cursor.id);
+    }
+
+    // Add language parameter for translation
+    const lang = typeof window !== 'undefined' ? (document.documentElement.lang || 'en') : 'en';
+    url.searchParams.set('lang', lang);
+
+    const resp = await fetch(url.toString());
+    if (!resp.ok) throw new Error('Failed to fetch products page');
+    const data = await resp.json();
+
+    const dbProducts = (data.products || []).map((p: any) => ({
+        id: p.id,
+        title: p.title,
+        price: p.price,
+        compareAt: p.originalPrice,
+        brand: p.brand,
+        type: p.category,
+        availability: p.availability,
+        labels: p.labels,
+        condition: p.condition,
+        isSoldOut: p.isSoldOut,
+        sourceUrl: p.sourceUrl,
+        imageUrl: p.imageUrl,
+        description: p.description,
+    })) as Product[];
+
+    return { products: dbProducts, nextCursor: data.nextCursor || null };
 }
 
 /**

@@ -66,22 +66,40 @@ export async function GET(request: NextRequest) {
 
     console.log(`✅ Scraped ${products.length} products`);
 
-    // Transform products to database format
-    const dbProducts: Omit<ScrapedProductDB, 'id' | 'scrapedAt' | 'lastUpdated' | 'isActive'>[] = products.map(product => ({
-      title: product.title,
-      price: product.price || 0,
-      originalPrice: product.originalPrice,
-      brand: product.brand || siteConfig.name,
-      category: product.category || 'General',
-      imageUrl: product.imageUrl,
-      description: product.description,
-      availability: product.availability,
-      sourceUrl: product.sourceUrl,
-      sourceSite: siteConfig.name,
-      condition: product.condition,
-      isSoldOut: product.isSoldOut,
-      labels: product.labels,
-    }));
+    // Transform products to database format (filter out undefined values)
+    const dbProducts: Omit<ScrapedProductDB, 'id' | 'scrapedAt' | 'lastUpdated' | 'isActive'>[] = products.map(product => {
+      const dbProduct: any = {
+        title: product.title,
+        price: product.price || 0,
+        brand: product.brand || siteConfig.name,
+        category: product.category || 'General',
+        availability: product.availability,
+        sourceUrl: product.sourceUrl,
+        sourceSite: siteConfig.name,
+      };
+
+      // Only add optional fields if they have values
+      if (product.originalPrice !== undefined && product.originalPrice !== null) {
+        dbProduct.originalPrice = product.originalPrice;
+      }
+      if (product.imageUrl) {
+        dbProduct.imageUrl = product.imageUrl;
+      }
+      if (product.description) {
+        dbProduct.description = product.description;
+      }
+      if (product.condition) {
+        dbProduct.condition = product.condition;
+      }
+      if (product.isSoldOut !== undefined) {
+        dbProduct.isSoldOut = product.isSoldOut;
+      }
+      if (product.labels && product.labels.length > 0) {
+        dbProduct.labels = product.labels;
+      }
+
+      return dbProduct;
+    });
 
     // Save to Firestore
     if (dbProducts.length > 0) {

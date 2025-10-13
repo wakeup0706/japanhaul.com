@@ -47,3 +47,37 @@ README.md
 SCRAPING_README.md
 ENHANCED_SCRAPING_README.md
 ADMIN_AUTH_README.md
+
+# Scripts folder (contains hardcoded credentials and scraping tools)
+scripts/
+
+# All .md files (documentation)
+*.md
+**/*.md
+
+# Development scripts and tools (not needed for deployment)
+*.sh
+test-*.js
+test-*.mjs
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary and cache files
+*.tmp
+*.temp
+.cache/
+.turbo

@@ -112,7 +112,7 @@ export class WebScraper {
                     'Cache-Control': 'no-cache',
                     'Pragma': 'no-cache',
                 },
-                timeout: 10000, // 10 seconds timeout per request
+                timeout: 8000,
             });
 
             console.log('🔍 [DEBUG] HTTP request completed, status:', response.status);
@@ -244,21 +244,20 @@ export class WebScraper {
         console.log('🔍 [DEBUG] Next page selector:', config.pagination?.nextPageSelector);
         console.log('🔍 [DEBUG] Max pages:', config.pagination?.maxPages);
 
-        try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const response = await (this.axios as any).get(config.url, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                    'Accept-Language': 'en-US,en;q=0.5',
-                    'Accept-Encoding': 'gzip, deflate',
-                    'Connection': 'keep-alive',
-                    'Upgrade-Insecure-Requests': '1',
-                    'Cache-Control': 'no-cache',
-                    'Pragma': 'no-cache',
-                },
-                timeout: 10000, // 10 seconds timeout per request
-            });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const response = await (this.axios as any).get(config.url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Encoding': 'gzip, deflate',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
+            },
+            timeout: 8000,
+        });
 
             console.log('🔍 [DEBUG] HTTP request completed, status:', response.status);
             console.log('🔍 [DEBUG] Response data length:', response.data?.length || 'unknown');
@@ -649,7 +648,7 @@ export class WebScraper {
                 sourceUrl,
                 condition: this.detectConditionFromText(name + ' ' + description),
             };
-        } catch {
+                        } catch {
             console.warn('Error parsing JSON-LD product');
             return null;
         }
@@ -765,7 +764,7 @@ export class WebScraper {
 
             console.log('No image found in element:', $(element).html().substring(0, 200) + '...');
             return undefined;
-        } catch {
+                        } catch {
             console.warn('Error extracting image from HTML');
             return undefined;
         }
@@ -867,7 +866,7 @@ export class WebScraper {
                 isSoldOut,
                 labels,
             };
-        } catch {
+                        } catch {
             console.error('Error extracting product data');
             return null;
         }
@@ -962,63 +961,39 @@ export class WebScraper {
     /**
      * Scrape products from a specific range of pages (batch processing)
      */
-    async scrapePageBatch(
-        config: ScrapingConfig, 
-        startPage: number, 
-        endPage: number,
-        onProgress?: (current: number, total: number, products: number) => void
-    ): Promise<ScrapedProduct[]> {
+    async scrapePageBatch(config: ScrapingConfig, startPage: number, endPage: number): Promise<ScrapedProduct[]> {
         console.log(`🔄 [BATCH] Starting batch scrape: pages ${startPage} to ${endPage}`);
         console.log('🔄 [BATCH] Current time:', new Date().toISOString());
 
         const allProducts: ScrapedProduct[] = [];
         const totalPages = endPage - startPage + 1;
-        let failedPages = 0;
-        const maxConsecutiveFailures = 3;
-        let consecutiveFailures = 0;
 
         for (let page = startPage; page <= endPage; page++) {
             const pageUrl = page === 1 ? config.url : `${config.url}?page=${page}`;
-            console.log(`📄 [BATCH] Scraping page ${page}/${endPage}: ${pageUrl}`);
+            console.log(`📄 [BATCH] Scraping page ${page}/${totalPages}: ${pageUrl}`);
 
             try {
                 const products = await this.scrapeProducts({ ...config, url: pageUrl });
                 console.log(`✅ [BATCH] Page ${page}: Found ${products.length} products`);
                 allProducts.push(...products);
-                consecutiveFailures = 0; // Reset on success
 
-                // Call progress callback if provided
-                if (onProgress) {
-                    onProgress(page - startPage + 1, totalPages, allProducts.length);
-                }
-
-                // Add exponential backoff delay between pages to avoid rate limiting
+                // Add delay between pages to avoid overwhelming the server
                 if (page < endPage) {
-                    const delay = Math.min(1000 + (failedPages * 500), 3000); // Max 3 seconds
-                    console.log(`⏱️ [BATCH] Waiting ${delay}ms before next page...`);
-                    await new Promise(resolve => setTimeout(resolve, delay));
+                    console.log(`⏱️ [BATCH] Waiting 1 second before next page...`);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
             } catch (error: unknown) {
-                failedPages++;
-                consecutiveFailures++;
                 console.error(`❌ [BATCH] Failed to scrape page ${page}:`, error instanceof Error ? error.message : String(error));
 
-                // If too many consecutive failures, stop scraping
-                if (consecutiveFailures >= maxConsecutiveFailures) {
-                    console.error(`❌ [BATCH] Too many consecutive failures (${consecutiveFailures}). Stopping scrape.`);
-                    throw new Error(`Batch scraping stopped after ${consecutiveFailures} consecutive failures. Successfully scraped ${allProducts.length} products from ${page - consecutiveFailures} pages.`);
-                }
-
-                // Add longer delay after failure
-                if (page < endPage) {
-                    const delay = Math.min(2000 + (failedPages * 1000), 5000); // Max 5 seconds after failure
-                    console.log(`⏱️ [BATCH] Waiting ${delay}ms after failure before next page...`);
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                }
+                // If a page fails, we can either:
+                // 1. Continue with next pages (more resilient)
+                // 2. Stop and return what we have (safer)
+                // For now, let's continue but log the error
+                console.error(`❌ [BATCH] Continuing with next pages despite error on page ${page}`);
             }
         }
 
-        console.log(`🎉 [BATCH] Batch completed! Total products: ${allProducts.length} from ${totalPages} pages (${failedPages} pages failed)`);
+        console.log(`🎉 [BATCH] Batch completed! Total products: ${allProducts.length} from ${totalPages} pages`);
         console.log('🔄 [BATCH] Total time:', new Date().toISOString());
 
         return allProducts;

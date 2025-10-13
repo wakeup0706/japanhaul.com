@@ -144,7 +144,8 @@
     "feature1": "A curated selection of goodies.",
     "feature2": "Fun snack mix and surprises.",
     "feature3": "Great for gifting.",
-    "youMayLike": "You may also like"
+    "youMayLike": "You may also like",
+    "noRelatedProducts": "No related products available"
   }
 }
 

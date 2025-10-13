@@ -63,6 +63,40 @@ NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 ```
 
+### Stripe Environment Variables (For Payment Processing)
+
+**Required for live payments**:
+
+```bash
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
+
+**For testing** (use these for development):
+
+```bash
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_SECRET_KEY=sk_test_...
+```
+
+**Add to Netlify**:
+1. Go to Netlify Dashboard → Your Site
+2. Site settings → Environment variables
+3. Add variables:
+   - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (your publishable key)
+   - `STRIPE_SECRET_KEY` (your secret key)
+   - `STRIPE_WEBHOOK_SECRET` (for webhooks - optional for basic setup)
+4. Scopes: All scopes (including Functions for secret key)
+5. Click "Save"
+6. **Important**: Redeploy your site!
+
+**Add to `.env.local`** (for local testing):
+```bash
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_SECRET_KEY=sk_test_...
+```
+
 ---
 
 ## Verification

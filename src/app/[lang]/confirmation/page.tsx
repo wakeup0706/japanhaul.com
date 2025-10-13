@@ -1,23 +1,90 @@
+"use client";
 import Link from "next/link";
+import { useParams, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
-export default async function ConfirmationPage({ params }: { params: Promise<{ lang: string }> }) {
-	const { lang: rawLang } = await params;
+export default function ConfirmationPage() {
+	const { lang: rawLang } = useParams<{ lang: string }>();
+	const searchParams = useSearchParams();
 	const lang = rawLang === "ja" ? "ja" : "en";
+
+	const [paymentStatus, setPaymentStatus] = useState<'loading' | 'success' | 'failed'>('loading');
+	const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+
+	useEffect(() => {
+		// Check payment status from URL params or local storage
+		const paymentIntent = searchParams.get('payment_intent');
+		const clientSecret = searchParams.get('payment_intent_client_secret');
+
+		if (paymentIntent) {
+			setPaymentIntentId(paymentIntent);
+			setPaymentStatus('success');
+		} else {
+			// Check if payment was successful
+			const storedPaymentId = localStorage.getItem('payment_intent_id');
+			if (storedPaymentId) {
+				setPaymentIntentId(storedPaymentId);
+				setPaymentStatus('success');
+				localStorage.removeItem('payment_intent_id');
+			} else {
+				setPaymentStatus('failed');
+			}
+		}
+	}, [searchParams]);
+
 	const t = {
-		en: { title: "Payment Confirmed", sub: "Thank you for your purchase!", track: "Track Delivery" },
-		ja: { title: "支払いが確認されました", sub: "ご購入ありがとうございます！", track: "配送状況を確認" },
+		en: {
+			title: "Payment Confirmed",
+			sub: "Thank you for your purchase!",
+			track: "Track Delivery",
+			failed: "Payment Failed",
+			failedSub: "Your payment could not be processed. Please try again.",
+			retry: "Try Again"
+		},
+		ja: {
+			title: "支払いが確認されました",
+			sub: "ご購入ありがとうございます！",
+			track: "配送状況を確認",
+			failed: "支払いに失敗しました",
+			failedSub: "支払いを処理できませんでした。もう一度お試しください。",
+			retry: "再試行"
+		},
 	}[lang];
+
+	if (paymentStatus === 'loading') {
+		return (
+			<section className="max-w-3xl mx-auto px-4 py-10 text-center">
+				<div className="animate-spin inline-block w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full"></div>
+				<p className="mt-4 text-gray-600">Confirming payment...</p>
+			</section>
+		);
+	}
+
+	if (paymentStatus === 'failed') {
+		return (
+			<section className="max-w-3xl mx-auto px-4 py-10 text-center">
+				<h1 className="text-2xl font-semibold mb-2 text-red-600">{t.failed}</h1>
+				<p className="text-gray-600 mb-6">{t.failedSub}</p>
+				<Link href={`/${lang}/checkout`} className="inline-block bg-red-600 text-white px-6 py-3 rounded font-semibold">
+					{t.retry}
+				</Link>
+			</section>
+		);
+	}
 
 	return (
 		<section className="max-w-3xl mx-auto px-4 py-10 text-center">
-			<h1 className="text-2xl font-semibold mb-2">{t.title}</h1>
+			<h1 className="text-2xl font-semibold mb-2 text-green-600">{t.title}</h1>
 			<p className="text-gray-600 mb-6">{t.sub}</p>
-			<div className="border rounded p-4 text-left mb-6">
-				<div className="font-semibold mb-2">Order #000123</div>
-				<div className="text-sm text-gray-600">3 items · Total $45.00</div>
+			<div className="border rounded p-4 text-left mb-6 bg-green-50">
+				<div className="font-semibold mb-2 flex items-center gap-2">
+					<span className="w-2 h-2 bg-green-600 rounded-full"></span>
+					Order #{paymentIntentId?.slice(-8) || '000123'}
+				</div>
+				<div className="text-sm text-gray-600">Payment confirmed successfully</div>
 			</div>
-			<Link href={`/${lang}/delivery`} className="inline-block bg-black text-white px-4 py-2 rounded">
-				{t.track}
+			<Link href={`/${lang}`} className="inline-block bg-black text-white px-6 py-3 rounded font-semibold">
+				Continue Shopping
 			</Link>
 		</section>
 	);

@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { 
-    getAllScrapedProducts, 
+import {
+    getAllScrapedProducts,
+    getScrapedProductsPage,
     getScrapedProductById,
     deleteScrapedProduct,
     clearAllScrapedProducts,
     getScrapingStats,
     getRecentScrapingJobs
 } from '@/lib/db/scraped-products';
+import { translateProductsArray } from '@/lib/translation-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +25,13 @@ export async function GET(request: NextRequest) {
         const availability = searchParams.get('availability') as 'in' | 'out' | null;
         const limitParam = searchParams.get('limit');
         const limit = limitParam ? parseInt(limitParam) : undefined;
+        const cursorTs = searchParams.get('cursorTs');
+        const cursorId = searchParams.get('cursorId');
+
+        // Detect target language for translation
+        const langParam = searchParams.get('lang');
+        const acceptLanguage = request.headers.get('accept-language') || '';
+        const targetLanguage = langParam || (acceptLanguage.includes('ja') ? 'ja' : 'en');
 
         // Get single product by ID
         if (action === 'get' && productId) {
@@ -35,7 +44,28 @@ export async function GET(request: NextRequest) {
                 );
             }
             
-            return NextResponse.json({ product });
+            // Fix concatenated price and add type mapping
+            let fixedPrice = product.price || 0;
+            if (fixedPrice > 100000) {
+                const priceStr = String(fixedPrice);
+                const firstPrice = parseInt(priceStr.substring(0, Math.min(5, priceStr.length)));
+                fixedPrice = Math.round((firstPrice / 150) * 100) / 100;
+            }
+
+            // Translate product data if needed
+            const productToTranslate = {
+                ...product,
+                price: fixedPrice,
+                type: product.category || 'General',
+            };
+
+            try {
+                const translatedProduct = (await translateProductsArray([productToTranslate], targetLanguage))[0];
+                return NextResponse.json({ product: translatedProduct });
+            } catch (error) {
+                console.error('Translation failed for single product, returning original:', error);
+                return NextResponse.json({ product: productToTranslate });
+            }
         }
 
         // Get statistics
@@ -52,18 +82,100 @@ export async function GET(request: NextRequest) {
         }
 
         // Get all products with filters
+        // If a cursor or limit is provided, use the paginated fetcher for speed
+        if (limit || cursorTs || cursorId) {
+            const { products, nextCursor } = await getScrapedProductsPage(limit || 48, 
+                cursorTs && cursorId ? { ts: parseInt(cursorTs), id: cursorId } : undefined
+            );
+            
+            // Transform products to match frontend expectations and fix prices
+            const transformedProducts = products.map(p => {
+                // Fix concatenated prices - extract first 4-5 digits as actual JPY price
+                let fixedPrice = p.price || 0;
+                if (fixedPrice > 100000) {
+                    // Convert concatenated number to string and extract first 4-5 digits
+                    const priceStr = String(fixedPrice);
+                    const firstPrice = parseInt(priceStr.substring(0, Math.min(5, priceStr.length)));
+                    // Convert JPY to USD (rough estimate: 1 USD = 150 JPY)
+                    fixedPrice = Math.round((firstPrice / 150) * 100) / 100;
+                }
+
+                return {
+                    ...p,
+                    price: fixedPrice,
+                    // Map category to type for frontend compatibility
+                    type: p.category || 'General',
+                };
+            });
+
+            // Apply translation if needed
+            try {
+                const translatedProducts = await translateProductsArray(transformedProducts, targetLanguage);
+
+                return NextResponse.json({
+                    success: true,
+                    products: translatedProducts,
+                    count: translatedProducts.length,
+                    nextCursor,
+                });
+            } catch (error) {
+                console.error('Translation failed for paginated products, returning original:', error);
+                return NextResponse.json({
+                    success: true,
+                    products: transformedProducts,
+                    count: transformedProducts.length,
+                    nextCursor,
+                });
+            }
+        }
+
+        // Fallback: non-paginated (filtered) fetch
         const products = await getAllScrapedProducts({
             sourceSite: sourceSite || undefined,
             availability: availability || undefined,
             isActive: true,
             limit,
         });
+        
+        // Transform products to match frontend expectations and fix prices
+        const transformedProducts = products.map(p => {
+            // Fix concatenated prices - extract first 4-5 digits as actual JPY price
+            let fixedPrice = p.price || 0;
+            if (fixedPrice > 100000) {
+                // Convert concatenated number to string and extract first 4-5 digits
+                const priceStr = String(fixedPrice);
+                const firstPrice = parseInt(priceStr.substring(0, Math.min(5, priceStr.length)));
+                // Convert JPY to USD (rough estimate: 1 USD = 150 JPY)
+                fixedPrice = Math.round((firstPrice / 150) * 100) / 100;
+            }
 
-        return NextResponse.json({
-            success: true,
-            products,
-            count: products.length,
+            return {
+                ...p,
+                price: fixedPrice,
+                // Map category to type for frontend compatibility
+                type: p.category || 'General',
+            };
         });
+
+        // Apply translation if needed
+        try {
+            const translatedProducts = await translateProductsArray(transformedProducts, targetLanguage);
+
+            return NextResponse.json({
+                success: true,
+                products: translatedProducts,
+                count: translatedProducts.length,
+                nextCursor: null,
+            });
+        } catch (error) {
+            console.error('Translation failed for fallback products, returning original:', error);
+            return NextResponse.json({
+                success: true,
+                products: transformedProducts,
+                count: transformedProducts.length,
+                nextCursor: null,
+            });
+        }
 
     } catch (error) {
         console.error('Error fetching products from database:', error);

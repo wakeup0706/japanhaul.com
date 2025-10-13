@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
-import {useTranslations} from "next-intl";
+import {useMessages, useTranslations} from "next-intl";
 
 function toTitle(slug: string): string {
     if (!slug) return "";
@@ -15,6 +15,7 @@ function toTitle(slug: string): string {
 export default function Breadcrumbs() {
     const t = useTranslations("breadcrumbs");
     const pathname = usePathname();
+    const messages = useMessages() as any;
     // pathname like "/en/products/p1" -> segments after lang
     const segments = useMemo(() => {
         const parts = (pathname || "/").split("/").filter(Boolean);
@@ -30,11 +31,12 @@ export default function Breadcrumbs() {
     const lang = (pathname || "/").split("/").filter(Boolean)[0] || "en";
     const crumbs = [{ label: t("home"), href: `/${lang}` }];
     let href = crumbs[0].href;
+    // Pull a safe lookup map for route labels to avoid next-intl "MISSING_MESSAGE" logs
+    const routeLabels: Record<string, string> = (messages?.breadcrumbs?.routes ?? {}) as Record<string, string>;
     segments.forEach((seg) => {
         href += `/${seg}`;
-        // Use raw() to check if key exists, fallback to title case for unknown segments
-        const rawT = t.raw(`routes.${seg}`);
-        const label = typeof rawT === 'string' ? rawT : toTitle(seg);
+        // Resolve translation if present; otherwise gracefully fallback without triggering MISSING_MESSAGE
+        const label = typeof routeLabels[seg] === "string" ? routeLabels[seg] : toTitle(seg);
         crumbs.push({ label, href });
     });
 

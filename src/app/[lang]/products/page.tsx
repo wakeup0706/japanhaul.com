@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { products as hardcodedProducts, brands, types, Product, getAllProducts } from "@/app/_data/products";
-import { useMemo, useState, useEffect } from "react";
+import { products as hardcodedProducts, brands, types, Product, getAllProducts, getProductsPage } from "@/app/_data/products";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { disableApiTranslation, enableApiTranslation } from "@/lib/translation-service";
 
 const mockProducts: Product[] = hardcodedProducts;
 
@@ -20,23 +21,81 @@ export default function ProductsPage() {
     const lang = (pathname || "/").split("/").filter(Boolean)[0] === "ja" ? "ja" : "en";
 
     // State for dynamic products
-    const [allProducts, setAllProducts] = useState<Product[]>(mockProducts);
+    const [allProducts, setAllProducts] = useState<Product[]>([]);
+    const [nextCursor, setNextCursor] = useState<{ ts: number; id: string } | null>(null);
+    const [isBootstrapping, setIsBootstrapping] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+    // Pass the current language to API requests
+    useEffect(() => {
+        // Set the document language for API requests
+        if (typeof document !== 'undefined') {
+            document.documentElement.lang = lang;
+        }
+    }, [lang]);
 
     // Fetch scraped products on component mount
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const products = await getAllProducts();
-                setAllProducts(products);
+                console.log('🔄 Fetching products from Firebase...');
+                // Immediately show mock items to avoid blank page while fetching
+                if (allProducts.length === 0) {
+                    setAllProducts(mockProducts);
+                }
+                // Fetch first page from API (fast, limited)
+                const { products, nextCursor } = await getProductsPage(48);
+                console.log('🎯 Products received in component:', products.length);
+                console.log('🎯 First product:', products[0]);
+                console.log('🎯 Sample product IDs:', products.slice(0, 5).map(p => p.id));
+                
+                // Check for duplicate IDs and deduplicate
+                const ids = products.map(p => p.id);
+                const uniqueIds = new Set(ids);
+                if (ids.length !== uniqueIds.size) {
+                    console.warn('⚠️ Warning: Duplicate product IDs found! Deduplicating...');
+                    // Keep only unique products (last occurrence wins)
+                    const uniqueProducts = Array.from(
+                        products.reduce((map, product) => {
+                            map.set(product.id, product);
+                            return map;
+                        }, new Map<string, Product>()).values()
+                    );
+                    console.log(`✅ Deduplicated: ${products.length} -> ${uniqueProducts.length} products`);
+                    setAllProducts(uniqueProducts);
+                } else {
+                    setAllProducts(products);
+                }
+                setNextCursor(nextCursor);
             } catch (error) {
-                console.error('Error fetching products:', error);
+                console.error('❌ Error fetching products:', error);
                 // Keep using hardcoded products as fallback
                 setAllProducts(mockProducts);
+            } finally {
+                setIsBootstrapping(false);
             }
         };
 
         fetchProducts();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    async function loadMore() {
+        if (!nextCursor) return;
+        setIsLoadingMore(true);
+        try {
+            const { products, nextCursor: nc } = await getProductsPage(48, nextCursor);
+            // Deduplicate by id when appending
+            const merged = new Map<string, Product>();
+            [...allProducts, ...products].forEach(p => merged.set(p.id, p));
+            setAllProducts(Array.from(merged.values()));
+            setNextCursor(nc);
+        } catch (e) {
+            console.error('Load more failed', e);
+        } finally {
+            setIsLoadingMore(false);
+        }
+    }
 
     const formatPrice = (amount: number) =>
         new Intl.NumberFormat(lang === "ja" ? "ja-JP" : "en-US", {
@@ -103,7 +162,7 @@ export default function ProductsPage() {
     }
 
     const priceMin = Number(searchParams.get("min")) || 0;
-    const priceMax = Number(searchParams.get("max")) || 9999;
+    const priceMax = Number(searchParams.get("max")) || 999999; // Increased to show all products
     const sortParam = searchParams.get("sort") || "best"; // best | price-asc | price-desc | alpha-asc | alpha-desc | date-asc | date-desc
     const selectedAvailability = new Set(getMulti("avail"));
     const selectedBrands = new Set(getMulti("brand"));
@@ -135,15 +194,30 @@ export default function ProductsPage() {
         }
         return list;
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [searchParams]);
+    }, [searchParams, allProducts]);
 
     const [quickView, setQuickView] = useState<Product | null>(null);
+    const [apiTranslationEnabled, setApiTranslationEnabled] = useState(true);
+    const sentinelRef = useRef<HTMLDivElement | null>(null);
+    const loadingGateRef = useRef<number>(0); // simple debounce gate
+
+    // Translation is now handled by pattern matching only
+    // API translation is disabled due to reliability issues
 
 	return (
         <section className="w-full px-6 lg:px-10 py-8">
             {/* Big page title */}
             <div className="w-full py-6">
                 <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-center">{t("products.title")}</h1>
+                {/* Translation status indicator */}
+                <div className="flex justify-center mt-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-600 bg-blue-50 px-3 py-1 rounded-full">
+                        <span>Translation:</span>
+                        <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                            Pattern-Based
+                        </span>
+                    </div>
+                </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                 {/* Sidebar filters */}
@@ -198,7 +272,7 @@ export default function ProductsPage() {
                         <h2 className="text-base font-semibold">{t("products.filters.brand")}</h2>
                         <div className="mt-3 max-h-56 overflow-auto pr-1 space-y-2 text-base">
                             {brands.map((b) => (
-                                <label key={b} className="flex items-center gap-2">
+                                <label key={`brand-${b}`} className="flex items-center gap-2">
                                     <input
                                         type="checkbox"
                                         checked={selectedBrands.has(b)}
@@ -214,14 +288,14 @@ export default function ProductsPage() {
                     <div>
                         <h2 className="text-base font-semibold">{t("products.filters.productType")}</h2>
                         <div className="mt-3 space-y-2 text-base">
-                            {types.map((t) => (
-                                <label key={t} className="flex items-center gap-2">
+                            {types.map((type) => (
+                                <label key={`type-${type}`} className="flex items-center gap-2">
                                     <input
                                         type="checkbox"
-                                        checked={selectedTypes.has(t)}
-                                        onChange={() => toggleInMulti("type", t)}
+                                        checked={selectedTypes.has(type)}
+                                        onChange={() => toggleInMulti("type", type)}
                                     />
-                                    <span>{t}</span>
+                                    <span>{type}</span>
                                 </label>
                             ))}
                         </div>
@@ -232,7 +306,7 @@ export default function ProductsPage() {
                         <h2 className="text-base font-semibold">{t("products.filters.region")}</h2>
                         <div className="mt-3 space-y-2 text-base">
                             {['Japan','Korea','Taiwan'].map((c) => (
-                                <label key={c} className="flex items-center gap-2 opacity-60 cursor-not-allowed">
+                                <label key={`region-${c}`} className="flex items-center gap-2 opacity-60 cursor-not-allowed">
                                     <input type="checkbox" disabled />
                                     <span>{c}</span>
                                 </label>
@@ -277,9 +351,9 @@ export default function ProductsPage() {
                                 <span className="rounded-full bg-white/60 p-0.5" aria-hidden>×</span>
                             </button>
                         ))}
-                        {(priceMin > 0 || priceMax < 9999) && (
+                        {(priceMin > 0 || priceMax < 999999) && (
                             <button onClick={() => { setParam("min", null); setParam("max", null); }} className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm ${chipClass("price")}`}>
-                                <span>${priceMin} – {priceMax === 9999 ? "∞" : `$${priceMax}`}</span>
+                                <span>${priceMin} – {priceMax === 999999 ? "∞" : `$${priceMax}`}</span>
                                 <span className="rounded-full bg-white/60 p-0.5" aria-hidden>×</span>
                             </button>
                         )}
@@ -301,9 +375,22 @@ export default function ProductsPage() {
                             </select>
                         </label>
                     </div>
+                    
+                    {/* Initial loading indicator (kept small; mock products are shown meanwhile) */}
+                    {isBootstrapping && allProducts.length === 0 && (
+                        <div className="flex items-center justify-center py-12">
+                            <div className="text-center">
+                                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent"></div>
+                                <p className="mt-2 text-sm text-gray-600">Loading products from Firebase...</p>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Product grid stays visible; on load-more we show a small inline loader below */}
                     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
-                        {filtered.map((p) => (
-                            <Link key={p.id} href={`${pathname}/${p.id}`} className="group block">
+                        {filtered.map((p, idx) => (
+                            // Use a robust composite key to avoid duplicate key warnings if backend returns duplicate or missing IDs
+                            <Link key={`${p.id || p.sourceUrl || 'item'}-${idx}`} href={`${pathname}/${p.id}`} className="group block">
                                 <div className="relative aspect-[4/3] overflow-hidden rounded-xl border bg-gradient-to-br from-pink-50 to-blue-50 group-hover:shadow-md group-hover:-translate-y-0.5 transition-transform">
                                     {/* Quick view button */}
                                     <button
@@ -323,7 +410,7 @@ export default function ProductsPage() {
                                         )}
                                         {p.labels?.map((label, index) => (
                                             <div
-                                                key={index}
+                                                key={`${p.id}-label-${label}-${index}`}
                                                 className={`rounded-full px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm ${
                                                     label === 'Sold' ? 'bg-gray-600' :
                                                     label === 'Used' ? 'bg-orange-500' :
@@ -346,6 +433,7 @@ export default function ProductsPage() {
                                         width={600}
                                         height={450}
                                         className="h-full w-full object-cover object-center transition-transform duration-500 ease-out group-hover:scale-105"
+                                        priority={idx < 4}
                                         onError={(e) => {
                                             const target = e.target as HTMLImageElement;
                                             target.src = "/placeholder.jpg";
@@ -376,6 +464,34 @@ export default function ProductsPage() {
 						</Link>
 				))}
                     </div>
+                        {nextCursor && (
+                        <div className="mt-6 flex justify-center">
+                            <button
+                                className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+                                onClick={loadMore}
+                                disabled={isLoadingMore}
+                            >
+                                {isLoadingMore ? 'Loading…' : 'Load more'}
+                            </button>
+                        </div>
+                    )}
+                        {/* Sentinel for auto-load */}
+                        <div ref={sentinelRef} className="h-6" />
+                    
+                        {/* Auto-load with IntersectionObserver */}
+                        {nextCursor && (
+                            <AutoLoader
+                                observeRef={sentinelRef}
+                                isLoading={isLoadingMore}
+                                onVisible={() => {
+                                    const now = Date.now();
+                                    // Debounce: at most once per 800ms
+                                    if (now - loadingGateRef.current < 800) return;
+                                    loadingGateRef.current = now;
+                                    loadMore();
+                                }}
+                            />
+                        )}
                 </div>
 			</div>
 
@@ -426,4 +542,31 @@ export default function ProductsPage() {
             )}
 		</section>
 	);
+}
+
+// Lightweight helper to observe when a ref is visible and trigger a callback
+function AutoLoader({
+    observeRef,
+    isLoading,
+    onVisible,
+}: {
+    observeRef: React.RefObject<Element | null>;
+    isLoading: boolean;
+    onVisible: () => void;
+}) {
+    useEffect(() => {
+        if (!observeRef.current) return;
+        if (isLoading) return; // don't observe while loading
+        const el = observeRef.current;
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    onVisible();
+                }
+            });
+        }, { rootMargin: '200px 0px 400px 0px' });
+        io.observe(el);
+        return () => io.disconnect();
+    }, [observeRef, isLoading, onVisible]);
+    return null;
 }
