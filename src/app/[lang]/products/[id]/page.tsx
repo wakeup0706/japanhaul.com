@@ -27,7 +27,6 @@ export default function ProductDetail({ params }: { params: Promise<{ lang: stri
 	const lang = routeLang === "ja" ? "ja" : "en";
     const [product, setProduct] = useState<DBProduct | null>(null);
     const [loading, setLoading] = useState(true);
-    const [enriching, setEnriching] = useState(false);
     const [related, setRelated] = useState<Array<{ id: string; docId?: string; title: string; imageUrl?: string; sourceUrl: string; priceJpy?: number }>>([]);
     const [loadingRelated, setLoadingRelated] = useState(true);
     // Canonical Firestore doc id to query related subcollection (scrapedProducts/{docId}/related)
@@ -68,24 +67,6 @@ export default function ProductDetail({ params }: { params: Promise<{ lang: stri
                         setProduct(dbp);
                         // Prefer the canonical Firestore doc id returned from DB
                         setRelatedDocId(dbp.id || null);
-                    }
-
-                    // If missing detail fields and we have a sourceUrl, trigger background enrichment
-                    const needsDetail = dbp && (!dbp.description || !dbp.images?.length);
-                    if (needsDetail && dbp.sourceUrl) {
-                        setEnriching(true);
-                        // Fire and refetch
-                        fetch(`/api/scrape/detail?productId=${encodeURIComponent(dbp.id)}&url=${encodeURIComponent(dbp.sourceUrl)}`)
-                            .then(() => fetch(`/api/products/db?action=get&id=${encodeURIComponent(dbp.id)}`))
-                            .then(r => r.ok ? r.json() : null)
-                            .then(refetched => {
-                                if (mounted && refetched?.product) {
-                                    const updated = refetched.product as DBProduct;
-                                    setProduct(updated);
-                                    setRelatedDocId(updated.id || null);
-                                }
-                            })
-                            .finally(() => setEnriching(false));
                     }
                 }
             } catch (e) {
@@ -276,9 +257,6 @@ export default function ProductDetail({ params }: { params: Promise<{ lang: stri
                         </div>
                         <div className="text-sm text-gray-600 mb-4">
                             {product?.description || t("description")}
-                            {enriching && (
-                                <span className="ml-2 text-gray-400">(fetching details…)</span>
-                            )}
                         </div>
                         <div className="flex items-center gap-3 mb-4">
                             <div className="inline-flex items-center rounded-full border px-4 py-2 min-w-[140px] justify-between">
