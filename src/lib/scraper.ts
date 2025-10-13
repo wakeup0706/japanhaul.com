@@ -1,16 +1,7 @@
-// Web scraping utilities for extracting product data from websites
-// Note: You'll need to install cheerio and axios first: npm install cheerio axios
+// This file has been removed for deployment
+// Scraping functionality is not needed since data is already in Firebase
 
-// Type definitions for cheerio and axios since proper types aren't available
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type CheerioAPI = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type CheerioStatic = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AxiosInstance = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Element = any;
-
+// Minimal type definitions for compatibility
 export interface ScrapedProduct {
     id: string;
     title: string;
@@ -27,8 +18,15 @@ export interface ScrapedProduct {
     labels?: string[];
 }
 
-interface JsonLdProduct {
-    '@type'?: string;
+// Minimal exports for compatibility - scraping functionality removed for deployment
+export const WebScraper = null;
+export const scrapingConfigs = {};
+
+// Stub interface for compatibility
+export interface ScrapingConfig {
+    url: string;
+    selectors: Record<string, any>;
+}
     '@context'?: string;
     name?: string;
     description?: string;
