@@ -70,6 +70,9 @@ src/app/api/products/scraped/
 # Admin scraping pages (entire directory)
 src/app/[lang]/admin/scraping/
 
+# Scraping UI components
+src/app/_components/ScrapeButton.tsx
+
 # IDE and editor files
 .vscode/
 .idea/
