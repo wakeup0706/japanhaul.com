@@ -67,8 +67,8 @@ src/app/api/scrape/
 src/app/api/cron/scrape/
 src/app/api/products/scraped/
 
-# Admin scraping pages
-src/app/[lang]/admin/scraping/websites/
+# Admin scraping pages (entire directory)
+src/app/[lang]/admin/scraping/
 
 # IDE and editor files
 .vscode/
