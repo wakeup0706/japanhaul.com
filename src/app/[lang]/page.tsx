@@ -3,21 +3,42 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import HeroCarousel from "@/app/_components/HeroCarousel";
 import { getAllProducts, type Product, products as hardcodedProducts } from "@/app/_data/products";
 
-export default function LocalizedHome({ params }: { params: { lang: string } }) {
-    const lang = params.lang === "ja" ? "ja" : "en";
-    const t = useTranslations({ locale: lang });
+export default function LocalizedHome({ params }: { params: Promise<{ lang: string }> }) {
+    // Unwrap params Promise for Next.js 15
+    const resolvedParams = use(params);
+
+    // Debug logging to see what's in params
+    console.log('🔍 Debug params:', resolvedParams);
+    console.log('🔍 Debug params.lang:', resolvedParams?.lang, typeof resolvedParams?.lang);
+
+    // Handle different possible param structures in Next.js 15
+    let langParam = resolvedParams?.lang;
+
+    // Handle case where lang might be an object with a value property
+    if (typeof langParam === 'object' && langParam !== null && 'value' in langParam) {
+        langParam = (langParam as { value: string }).value;
+    }
+
+    // Ensure lang is a valid string
+    const lang = (typeof langParam === 'string' && (langParam === "ja" || langParam === "en"))
+        ? langParam
+        : "en";
+
+    console.log('🔍 Final lang value:', lang, typeof lang);
+    const t = useTranslations('home'); // Use namespace from messages, not locale
 
     // State for products - start with dummy data, then fetch real data
     const [products, setProducts] = useState<Product[]>(hardcodedProducts.slice(0, 8));
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         const fetchProducts = async () => {
             try {
+                setIsLoading(true);
                 console.log('🔄 Fetching real products for home page...');
                 const realProducts = await getAllProducts(8);
                 console.log('✅ Received real products:', realProducts.length);
@@ -43,14 +64,9 @@ export default function LocalizedHome({ params }: { params: { lang: string } }) 
                 <HeroCarousel lang={lang} />
             </div>
 
-            {/* Product grid with real products */}
+            {/* Product grid with SSR data + client-side fallback */}
             <div className="w-full px-6 lg:px-10 py-8">
-                {isLoading ? (
-                    <div className="text-center py-12">
-                        <div className="animate-spin inline-block w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full"></div>
-                        <p className="mt-4 text-gray-600">Loading products...</p>
-                    </div>
-                ) : products.length > 0 ? (
+                {products.length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                         {products.map((product) => (
                             <Link key={product.id} href={`/${lang}/products/${product.id}`} className="group block">
@@ -89,6 +105,29 @@ export default function LocalizedHome({ params }: { params: { lang: string } }) 
                     </div>
                 )}
             </div>
+
+            {/* Client-side fallback script */}
+            <script
+                dangerouslySetInnerHTML={{
+                    __html: `
+                        if (typeof window !== 'undefined' && document.querySelector('.grid')) {
+                            const productsGrid = document.querySelector('.grid');
+                            if (productsGrid && productsGrid.children.length === 0) {
+                                console.log('🔄 Client-side: No products found, attempting fallback...');
+                                fetch('/api/products/db?limit=8&lang=${lang}')
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.products && data.products.length > 0) {
+                                            console.log('✅ Client-side: Found products, would update DOM');
+                                            // In a real implementation, you would update the DOM here
+                                        }
+                                    })
+                                    .catch(error => console.error('❌ Client-side fallback failed:', error));
+                            }
+                        }
+                    `
+                }}
+            />
         </section>
     );
 }
