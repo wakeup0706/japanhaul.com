@@ -54,11 +54,8 @@ export async function getScrapedProducts(limit: number = 48): Promise<Product[]>
         // Fetch from Firebase database instead of in-memory API
         // Add language parameter for translation (default to 'en' if not specified)
         const lang = typeof window !== 'undefined' ? (document.documentElement.lang || 'en') : 'en';
-        // Use absolute URL for SSR, relative for CSR
-        const baseUrl = typeof window !== 'undefined'
-            ? window.location.origin
-            : `https://${process.env.VERCEL_URL || 'localhost:3000'}`;
-        const response = await fetch(`${baseUrl}/api/products/db?limit=${encodeURIComponent(String(limit))}&lang=${lang}`);
+        // Use relative URL - Next.js handles this correctly for both client and server
+        const response = await fetch(`/api/products/db?limit=${encodeURIComponent(String(limit))}&lang=${lang}`);
 
         if (!response.ok) {
             console.warn('Failed to fetch products from database:', response.statusText);
@@ -131,11 +128,8 @@ export async function getProductsPage(limit: number = 48, cursor?: { ts: number;
     products: Product[];
     nextCursor: { ts: number; id: string } | null;
 }> {
-    // Use absolute URL for SSR, relative for CSR
-    const baseUrl = typeof window !== 'undefined'
-        ? window.location.origin
-        : `https://${process.env.VERCEL_URL || 'localhost:3000'}`;
-    const url = new URL(`${baseUrl}/api/products/db`);
+    // Use relative URL - Next.js handles this correctly for both client and server
+    const url = new URL(`/api/products/db`, typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
     url.searchParams.set('limit', String(limit));
     if (cursor) {
         url.searchParams.set('cursorTs', String(cursor.ts));
@@ -179,11 +173,8 @@ export async function addScrapedProducts(newProducts: Omit<Product, 'id'>[]): Pr
             ...product,
         }));
 
-        // Use absolute URL for SSR, relative for CSR
-        const baseUrl = typeof window !== 'undefined'
-            ? window.location.origin
-            : `https://${process.env.VERCEL_URL || 'localhost:3000'}`;
-        const response = await fetch(`${baseUrl}/api/products/scraped`, {
+        // Use relative URL - Next.js handles this correctly
+        const response = await fetch(`/api/products/scraped`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -215,11 +206,8 @@ export async function addScrapedProducts(newProducts: Omit<Product, 'id'>[]): Pr
  */
 export async function clearScrapedProducts(): Promise<void> {
     try {
-        // Use absolute URL for SSR, relative for CSR
-        const baseUrl = typeof window !== 'undefined'
-            ? window.location.origin
-            : `https://${process.env.VERCEL_URL || 'localhost:3000'}`;
-        const response = await fetch(`${baseUrl}/api/products/scraped`, {
+        // Use relative URL - Next.js handles this correctly
+        const response = await fetch(`/api/products/scraped`, {
             method: 'DELETE',
         });
 
