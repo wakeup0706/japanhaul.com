@@ -58,15 +58,17 @@ test-*.mjs
 **/*.spec.*
 
 # Scraping related files (not needed for deployment)
-# Keep stub versions of these in repo; ignore any local real implementations with .local suffix
+src/lib/scraper.ts
 src/lib/scraper-example.ts
-src/lib/scraper.local.ts
-src/lib/scraping-config.local.ts
+src/lib/scraping-config.ts
 
 # Scraping API routes (depend on scraper files - but NOT products/db which is needed!)
 src/app/api/scrape/
 src/app/api/cron/scrape/
 src/app/api/products/scraped/
+
+# Admin scraping pages
+src/app/[lang]/admin/scraping/websites/
 
 # IDE and editor files
 .vscode/
