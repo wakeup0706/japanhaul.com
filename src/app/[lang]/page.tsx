@@ -1,26 +1,40 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
 import HeroCarousel from "@/app/_components/HeroCarousel";
-import { getAllProducts, type Product } from "@/app/_data/products";
+import { getAllProducts, type Product, products as hardcodedProducts } from "@/app/_data/products";
 
-export default async function LocalizedHome({ params }: { params: Promise<{ lang: string }> }) {
-    const { lang: rawLang } = await params;
-    const lang = rawLang === "ja" ? "ja" : "en";
-    const t = await getTranslations({ locale: lang });
+export default function LocalizedHome({ params }: { params: { lang: string } }) {
+    const lang = params.lang === "ja" ? "ja" : "en";
+    const t = useTranslations({ locale: lang });
 
-    // Fetch real products from database
-    let products: Product[] = [];
-    let isLoading = true;
-    try {
-        products = await getAllProducts(8); // Get 8 products for the home page
-        isLoading = false;
-    } catch (error) {
-        console.error('Failed to fetch products for home page:', error);
-        // Fallback to empty array - will show no products
-        products = [];
-        isLoading = false;
-    }
+    // State for products - start with dummy data, then fetch real data
+    const [products, setProducts] = useState<Product[]>(hardcodedProducts.slice(0, 8));
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchProducts = async () => {
+            try {
+                console.log('🔄 Fetching real products for home page...');
+                const realProducts = await getAllProducts(8);
+                console.log('✅ Received real products:', realProducts.length);
+                if (realProducts.length > 0) {
+                    setProducts(realProducts);
+                    console.log('✅ Updated home page with real products');
+                }
+            } catch (error) {
+                console.error('❌ Failed to fetch real products for home page:', error);
+                // Keep using dummy products as fallback
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchProducts();
+    }, []);
 
     return (
         <section>
