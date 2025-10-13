@@ -39,19 +39,16 @@ export const products: Product[] = Array.from({ length: 48 }).map((_, i) => {
     };
 });
 
-// Global cache for scraped products
+// Global cache for scraped products - disabled for debugging
 let scrapedProductsCache: Product[] | null = null;
 let lastFetchTime: number = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 0; // Disabled cache for debugging
 
 /**
  * Fetch scraped products from the Firestore database
  */
 export async function getScrapedProducts(limit: number = 48): Promise<Product[]> {
-    // Return cached products if they're still fresh
-    if (scrapedProductsCache && (Date.now() - lastFetchTime) < CACHE_DURATION) {
-        return scrapedProductsCache;
-    }
+    // Cache disabled for debugging
 
     try {
         // Fetch from Firebase database instead of in-memory API
@@ -182,12 +179,6 @@ export async function addScrapedProducts(newProducts: Omit<Product, 'id'>[]): Pr
             ...product,
         }));
 
-        // Use Vercel URL for server-side, relative URL for client-side
-        const baseUrl = typeof window !== 'undefined'
-            ? window.location.origin
-            : (process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL
-                ? `https://${process.env.VERCEL_URL}`
-                : 'http://localhost:3000');
         // Use absolute URL for SSR, relative for CSR
         const baseUrl = typeof window !== 'undefined'
             ? window.location.origin
