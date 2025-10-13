@@ -57,7 +57,8 @@ export async function getScrapedProducts(limit: number = 48): Promise<Product[]>
         // Fetch from Firebase database instead of in-memory API
         // Add language parameter for translation (default to 'en' if not specified)
         const lang = typeof window !== 'undefined' ? (document.documentElement.lang || 'en') : 'en';
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/products/db?limit=${encodeURIComponent(String(limit))}&lang=${lang}`);
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
+        const response = await fetch(`${baseUrl}/api/products/db?limit=${encodeURIComponent(String(limit))}&lang=${lang}`);
 
         if (!response.ok) {
             console.warn('Failed to fetch products from database:', response.statusText);
@@ -130,7 +131,8 @@ export async function getProductsPage(limit: number = 48, cursor?: { ts: number;
     products: Product[];
     nextCursor: { ts: number; id: string } | null;
 }> {
-    const url = new URL(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/products/db`);
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
+    const url = new URL(`${baseUrl}/api/products/db`);
     url.searchParams.set('limit', String(limit));
     if (cursor) {
         url.searchParams.set('cursorTs', String(cursor.ts));
@@ -174,7 +176,8 @@ export async function addScrapedProducts(newProducts: Omit<Product, 'id'>[]): Pr
             ...product,
         }));
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/products/scraped`, {
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
+        const response = await fetch(`${baseUrl}/api/products/scraped`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -206,7 +209,8 @@ export async function addScrapedProducts(newProducts: Omit<Product, 'id'>[]): Pr
  */
 export async function clearScrapedProducts(): Promise<void> {
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/products/scraped`, {
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
+        const response = await fetch(`${baseUrl}/api/products/scraped`, {
             method: 'DELETE',
         });
 

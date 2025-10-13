@@ -3,6 +3,9 @@
 [build]
   command = "npm run build"
   publish = ".next"
+  environment = [
+    "NEXT_PUBLIC_BASE_URL"
+  ]
 
 # API route specific configuration
 [[plugins]]
