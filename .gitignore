@@ -41,24 +41,27 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# local helper docs (ignored)
-DEV_PUSH_GUIDE.md
-README.md
-SCRAPING_README.md
-ENHANCED_SCRAPING_README.md
-ADMIN_AUTH_README.md
-
-# Scripts folder (contains hardcoded credentials and scraping tools)
-scripts/
-
 # All .md files (documentation)
 *.md
 **/*.md
 
+# Scripts folder (contains hardcoded credentials and scraping tools)
+scripts/
+**/scripts/
+
 # Development scripts and tools (not needed for deployment)
 *.sh
+**/*.sh
 test-*.js
 test-*.mjs
+**/*.test.*
+**/*.spec.*
+
+# Scraping related files (not needed for deployment)
+src/lib/scraper.ts
+src/lib/scraper-example.ts
+src/lib/scraping-config.ts
+src/lib/db/scraped-products.ts
 
 # IDE and editor files
 .vscode/
