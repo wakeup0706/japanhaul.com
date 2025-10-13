@@ -57,7 +57,12 @@ export async function getScrapedProducts(limit: number = 48): Promise<Product[]>
         // Fetch from Firebase database instead of in-memory API
         // Add language parameter for translation (default to 'en' if not specified)
         const lang = typeof window !== 'undefined' ? (document.documentElement.lang || 'en') : 'en';
-        const baseUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
+        // Use Vercel URL for server-side, relative URL for client-side
+        const baseUrl = typeof window !== 'undefined'
+            ? window.location.origin
+            : (process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL
+                ? `https://${process.env.VERCEL_URL}`
+                : 'http://localhost:3000');
         const response = await fetch(`${baseUrl}/api/products/db?limit=${encodeURIComponent(String(limit))}&lang=${lang}`);
 
         if (!response.ok) {
@@ -131,7 +136,12 @@ export async function getProductsPage(limit: number = 48, cursor?: { ts: number;
     products: Product[];
     nextCursor: { ts: number; id: string } | null;
 }> {
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
+    // Use Vercel URL for server-side, relative URL for client-side
+    const baseUrl = typeof window !== 'undefined'
+        ? window.location.origin
+        : (process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL
+            ? `https://${process.env.VERCEL_URL}`
+            : 'http://localhost:3000');
     const url = new URL(`${baseUrl}/api/products/db`);
     url.searchParams.set('limit', String(limit));
     if (cursor) {
@@ -176,7 +186,12 @@ export async function addScrapedProducts(newProducts: Omit<Product, 'id'>[]): Pr
             ...product,
         }));
 
-        const baseUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
+        // Use Vercel URL for server-side, relative URL for client-side
+        const baseUrl = typeof window !== 'undefined'
+            ? window.location.origin
+            : (process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL
+                ? `https://${process.env.VERCEL_URL}`
+                : 'http://localhost:3000');
         const response = await fetch(`${baseUrl}/api/products/scraped`, {
             method: 'POST',
             headers: {
@@ -209,7 +224,12 @@ export async function addScrapedProducts(newProducts: Omit<Product, 'id'>[]): Pr
  */
 export async function clearScrapedProducts(): Promise<void> {
     try {
-        const baseUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
+        // Use Vercel URL for server-side, relative URL for client-side
+        const baseUrl = typeof window !== 'undefined'
+            ? window.location.origin
+            : (process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL
+                ? `https://${process.env.VERCEL_URL}`
+                : 'http://localhost:3000');
         const response = await fetch(`${baseUrl}/api/products/scraped`, {
             method: 'DELETE',
         });
