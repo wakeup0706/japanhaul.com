@@ -61,7 +61,11 @@ test-*.mjs
 src/lib/scraper.ts
 src/lib/scraper-example.ts
 src/lib/scraping-config.ts
-src/lib/db/scraped-products.ts
+
+# Scraping API routes (depend on scraper files - but NOT products/db which is needed!)
+src/app/api/scrape/
+src/app/api/cron/scrape/
+src/app/api/products/scraped/
 
 # IDE and editor files
 .vscode/
