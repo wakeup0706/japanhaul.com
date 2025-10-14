@@ -11,47 +11,40 @@ export async function GET(req: NextRequest) {
     const max = Number(searchParams.get('limit') || '12');
     if (!productId) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
-    const q = query(
-      collection(db, `scrapedProducts/${productId}/related`),
-      orderBy('rank', 'asc'),
-      limit(Math.max(1, Math.min(max, 48)))
-    );
-    const snap = await getDocs(q);
-    const items = snap.docs.map(d => {
-      const data: any = d.data();
-      const sourceUrl: string | undefined = data.sourceUrl;
-      // Prefer numeric product code as public id if available
-      let publicId: string = data.id || d.id;
-      const numericFromField = typeof data.id === 'string' && /^\d+$/.test(data.id);
-      if (!numericFromField && sourceUrl) {
-        const m = sourceUrl.match(/\/detail\/(\d+)/);
-        if (m) publicId = m[1];
+    // Fetch related products from subcollection
+    const relatedRef = collection(db, `scrapedProducts/${productId}/related`);
+    const relatedSnap = await getDocs(relatedRef);
+    
+    // Transform to simple array format
+    const relatedProducts = relatedSnap.docs.map(doc => {
+      const data = doc.data();
+      
+      // Extract correct numeric ID from document ID or data
+      let correctProductId = doc.id.replace('related_', '');
+      if (data.id) {
+        correctProductId = data.id.toString();
       }
-
-      // Compute or reuse Firestore doc id (p_*) for routing
-      let docId: string = d.id;
-      if (!docId.startsWith('p_') && sourceUrl) {
-        try {
-          const u = new URL(sourceUrl);
-          const normalized = `${u.origin}${u.pathname}`.toLowerCase();
-          let hash = 5381;
-          for (let i = 0; i < normalized.length; i++) hash = ((hash << 5) + hash) ^ normalized.charCodeAt(i);
-          docId = `p_${Math.abs(hash >>> 0).toString(36)}`;
-        } catch {}
+      
+      // Apply 20% markup to scraped products
+      let displayPrice = data.price || 0;
+      if (data.url && data.url.includes('scraped')) {
+        displayPrice = Math.round(displayPrice * 1.2); // 20% markup
       }
-
+      
       return {
-        id: publicId,          // human/product code id
-        docId,                 // Firestore document id for routing
-        title: data.title,
-        imageUrl: data.imageUrl,
-        sourceUrl: data.sourceUrl,
-        priceJpy: data.priceJpy,
-        rank: data.rank,
-        addedAt: data.addedAt,
+        id: correctProductId,
+        imageUrl: data.imageUrl || '',
+        price: displayPrice,
+        scrapedAt: data.scrapedAt || new Date().toISOString(),
+        title: data.title || '',
+        url: data.url || data.sourceUrl || ''
       };
     });
-    return NextResponse.json({ items });
+    
+    // Apply limit
+    const limitedProducts = relatedProducts.slice(0, Math.max(1, Math.min(max, 48)));
+    
+    return NextResponse.json(limitedProducts);
   } catch (e) {
     console.error('Related fetch failed', e);
     return NextResponse.json({ error: 'Failed to fetch related' }, { status: 500 });

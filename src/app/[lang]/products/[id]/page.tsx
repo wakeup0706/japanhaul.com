@@ -90,9 +90,10 @@ export default function ProductDetail({ params }: { params: Promise<{ lang: stri
                 const res = await fetch(`/api/products/related?id=${encodeURIComponent(relatedDocId)}&limit=12`, { cache: 'no-store' });
                 if (res.ok) {
                     const data = await res.json();
-                    const items = (data?.items || []) as typeof related;
+                    const items = (Array.isArray(data) ? data : data?.items || []) as typeof related;
                     if (mounted) {
                         setRelated(items);
+                        
                         // If empty on first load, schedule a couple of retries (for first-visit population lag)
                         if (items.length === 0 && retryRef.current < MAX_RELATED_RETRIES) {
                             // keep skeleton visible
@@ -143,6 +144,17 @@ export default function ProductDetail({ params }: { params: Promise<{ lang: stri
             }
         };
     }, [id, loading, relatedDocId]);
+
+    // Calculate display price with 20% markup on scraped products
+    const getDisplayPrice = (product: DBProduct) => {
+        // For scraped products, add 20% markup to the scraped price
+        if (product.sourceUrl && product.sourceUrl.includes('scraped')) {
+            const scrapedPrice = product.price;
+            const markupAmount = scrapedPrice * 0.2;
+            return scrapedPrice + markupAmount;
+        }
+        return product.price;
+    };
 
     const formatPrice = (amount: number) =>
         new Intl.NumberFormat(lang === "ja" ? "ja-JP" : "en-US", {
@@ -249,7 +261,12 @@ export default function ProductDetail({ params }: { params: Promise<{ lang: stri
                         </div>
                         <div className="text-lg mb-2 flex items-center gap-2">
                             <span className={`${product?.compareAt ? "text-rose-600 font-semibold" : "text-black font-semibold"}`}>
-                                {formatPrice(product?.price || 0)}
+                                {formatPrice(getDisplayPrice(product))}
+                                {product?.sourceUrl && product.sourceUrl.includes('scraped') && (
+                                    <span className="ml-2 text-xs text-gray-500">
+                                        (+20% markup)
+                                    </span>
+                                )}
                             </span>
                             {product?.compareAt && (
                                 <span className="text-base text-black line-through">{formatPrice(product.compareAt)}</span>
@@ -308,7 +325,7 @@ export default function ProductDetail({ params }: { params: Promise<{ lang: stri
                     ) : related.length > 0 ? (
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                             {related.slice(0, 8).map((p) => (
-                                <Link key={`${p.id}`} href={`/${lang}/products/${p.id}`} className="group block">
+                                <Link key={`${p.id}`} href={`/${lang}/products/p_${p.id}`} className="group block">
                                     <div className="aspect-[4/3] overflow-hidden rounded-lg border bg-white">
                                         <Image
                                             src={p.imageUrl || "/placeholder.jpg"}
@@ -344,7 +361,12 @@ export default function ProductDetail({ params }: { params: Promise<{ lang: stri
                             <div className="truncate font-medium">{product?.title || "Loading..."}</div>
                             <div className="text-sm flex items-center gap-2">
                                 <span className={`${product?.compareAt ? "text-rose-600 font-semibold" : "text-black font-semibold"}`}>
-                                    {formatPrice(product?.price || 0)}
+                                    {formatPrice(getDisplayPrice(product))}
+                                    {product?.sourceUrl && product.sourceUrl.includes('scraped') && (
+                                        <span className="ml-1 text-xs text-gray-500">
+                                            (+20% markup)
+                                        </span>
+                                    )}
                                 </span>
                                 {product?.compareAt && (
                                     <span className="text-xs text-black line-through">{formatPrice(product.compareAt)}</span>
@@ -358,7 +380,7 @@ export default function ProductDetail({ params }: { params: Promise<{ lang: stri
                                 <button className="h-6 w-6 inline-flex items-center justify-center rounded-full hover:bg-gray-100" onClick={() => setQty(qty+1)}>+</button>
                             </div>
                             {product && (
-                                <AddToCartButton id={product.id} title={product.title} price={product.price} label={t("addToCart")} image={product.images?.[0] || product.imageUrl || "/placeholder.jpg"} />
+                                <AddToCartButton id={product.id} title={product.title} price={getDisplayPrice(product)} label={t("addToCart")} image={product.images?.[0] || product.imageUrl || "/placeholder.jpg"} />
                             )}
                         </div>
                     </div>

@@ -9,7 +9,7 @@ import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-
 import { stripePromise } from '@/lib/stripe';
 
 // Checkout Form Component that uses Stripe Elements
-function CheckoutForm({ subtotal, paymentIntentId, onPaymentSuccess }: { subtotal: number; paymentIntentId: string; onPaymentSuccess: () => void }) {
+function CheckoutForm({ subtotal, paymentIntentId, onPaymentSuccess, isDemoMode }: { subtotal: number; paymentIntentId: string; onPaymentSuccess: () => void; isDemoMode: boolean }) {
     const stripe = useStripe();
     const elements = useElements();
     const [isProcessing, setIsProcessing] = useState(false);
@@ -17,6 +17,19 @@ function CheckoutForm({ subtotal, paymentIntentId, onPaymentSuccess }: { subtota
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (isDemoMode) {
+            // Demo mode - simulate payment success
+            setIsProcessing(true);
+            setMessage('Demo mode: Payment would be processed...');
+
+            setTimeout(() => {
+                setMessage('Demo mode: Payment successful!');
+                setIsProcessing(false);
+                onPaymentSuccess();
+            }, 2000);
+            return;
+        }
 
         if (!stripe || !elements) {
             return;
@@ -46,6 +59,13 @@ function CheckoutForm({ subtotal, paymentIntentId, onPaymentSuccess }: { subtota
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
+            {isDemoMode && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                    <div className="text-yellow-800 text-sm">
+                        🧪 <strong>Demo Mode:</strong> This is a demo payment form. No real payment will be processed.
+                    </div>
+                </div>
+            )}
             <div className="border rounded-md p-4">
                 <h2 className="font-semibold mb-3">Payment Information</h2>
                 <PaymentElement />
@@ -53,11 +73,14 @@ function CheckoutForm({ subtotal, paymentIntentId, onPaymentSuccess }: { subtota
             </div>
 
             <button
-                disabled={isProcessing || !stripe}
+                disabled={isProcessing || (!stripe && !isDemoMode)}
                 type="submit"
                 className="inline-flex w-full justify-center rounded bg-red-600 text-white px-4 py-3 text-base font-semibold disabled:opacity-50"
             >
-                {isProcessing ? 'Processing...' : `Pay $${subtotal.toFixed(2)}`}
+                {isProcessing
+                    ? (isDemoMode ? 'Processing Demo...' : 'Processing...')
+                    : (isDemoMode ? `Demo Pay $${subtotal.toFixed(2)}` : `Pay $${subtotal.toFixed(2)}`)
+                }
             </button>
         </form>
     );
@@ -74,6 +97,65 @@ export default function CheckoutPage() {
     const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
     const [isLoadingPayment, setIsLoadingPayment] = useState(false);
     const [paymentError, setPaymentError] = useState<string | null>(null);
+    const [isDemoMode, setIsDemoMode] = useState(false);
+
+    // Form state for contact and delivery details
+    const [formData, setFormData] = useState({
+        email: '',
+        firstName: '',
+        lastName: '',
+        phone: '',
+        address: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        newsletterOptIn: true,
+    });
+    const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+    const [orderError, setOrderError] = useState<string | null>(null);
+
+    const handleInputChange = (field: string, value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    const createOrderFromForm = async () => {
+        if (!paymentIntentId) {
+            throw new Error('No payment intent ID available');
+        }
+
+        const orderData = {
+            ...formData,
+            items: state.items.map(item => ({
+                productId: item.id,
+                title: item.title,
+                price: item.price,
+                quantity: item.quantity,
+                imageUrl: item.image,
+            })),
+            subtotal,
+            total: subtotal, // For now, total equals subtotal (no shipping/tax)
+            paymentIntentId,
+        };
+
+        const response = await fetch('/api/orders', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(orderData),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to create order');
+        }
+
+        return result.orderId;
+    };
 
     useEffect(() => {
         setMounted(true);
@@ -105,6 +187,7 @@ export default function CheckoutPage() {
                 if (data.clientSecret) {
                     setClientSecret(data.clientSecret);
                     setPaymentIntentId(data.paymentIntentId);
+                    setIsDemoMode(data.demo || false);
                 } else if (data.error) {
                     setPaymentError(data.error);
                 }
@@ -121,13 +204,28 @@ export default function CheckoutPage() {
 
     const itemCount = state.items.reduce((sum, i) => sum + i.quantity, 0);
 
-    const handlePaymentSuccess = () => {
-        // Store payment intent ID for confirmation page
-        if (paymentIntentId) {
+    const handlePaymentSuccess = async () => {
+        if (!paymentIntentId) return;
+
+        setIsCreatingOrder(true);
+        setOrderError(null);
+
+        try {
+            // Create order with form data
+            await createOrderFromForm();
+
+            // Store data for confirmation page
             localStorage.setItem('payment_intent_id', paymentIntentId);
+            localStorage.setItem('is_demo_mode', isDemoMode.toString());
+
+            // Redirect to confirmation page
+            router.push(`/${lang}/confirmation`);
+        } catch (error) {
+            console.error('Error creating order:', error);
+            setOrderError(error instanceof Error ? error.message : 'Failed to create order');
+        } finally {
+            setIsCreatingOrder(false);
         }
-        // Redirect to confirmation page
-        router.push(`/${lang}/confirmation`);
     };
 
     const appearance = {
@@ -161,9 +259,21 @@ export default function CheckoutPage() {
                     <div className="space-y-6">
                         <div className="border rounded-md p-4">
                             <h2 className="font-semibold mb-3">{t("contact")}</h2>
-                            <input className="border rounded p-3 w-full" placeholder={t("email")} />
+                            <input
+                                className="border rounded p-3 w-full"
+                                placeholder={t("email")}
+                                type="email"
+                                value={formData.email}
+                                onChange={(e) => handleInputChange('email', e.target.value)}
+                                required
+                            />
                             <label className="mt-3 flex items-center gap-2 text-sm text-gray-700">
-                                <input type="checkbox" defaultChecked className="h-4 w-4" />
+                                <input
+                                    type="checkbox"
+                                    checked={formData.newsletterOptIn}
+                                    onChange={(e) => handleInputChange('newsletterOptIn', e.target.checked.toString())}
+                                    className="h-4 w-4"
+                                />
                                 <span>Email me with news and offers</span>
                             </label>
                         </div>
@@ -171,16 +281,57 @@ export default function CheckoutPage() {
                         <div className="border rounded-md p-4">
                             <h2 className="font-semibold mb-3">{t("delivery")}</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <input className="border rounded p-3 w-full" placeholder="First name" />
-                                <input className="border rounded p-3 w-full" placeholder="Last name" />
+                                <input
+                                    className="border rounded p-3 w-full"
+                                    placeholder="First name"
+                                    value={formData.firstName}
+                                    onChange={(e) => handleInputChange('firstName', e.target.value)}
+                                    required
+                                />
+                                <input
+                                    className="border rounded p-3 w-full"
+                                    placeholder="Last name"
+                                    value={formData.lastName}
+                                    onChange={(e) => handleInputChange('lastName', e.target.value)}
+                                    required
+                                />
                             </div>
-                            <input className="mt-3 border rounded p-3 w-full" placeholder="Address" />
+                            <input
+                                className="mt-3 border rounded p-3 w-full"
+                                placeholder="Address"
+                                value={formData.address}
+                                onChange={(e) => handleInputChange('address', e.target.value)}
+                                required
+                            />
                             <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
-                                <input className="border rounded p-3 w-full" placeholder="City" />
-                                <input className="border rounded p-3 w-full" placeholder="State" />
-                                <input className="border rounded p-3 w-full" placeholder="ZIP code" />
-					</div>
-                            <input className="mt-3 border rounded p-3 w-full" placeholder="Phone" />
+                                <input
+                                    className="border rounded p-3 w-full"
+                                    placeholder="City"
+                                    value={formData.city}
+                                    onChange={(e) => handleInputChange('city', e.target.value)}
+                                    required
+                                />
+                                <input
+                                    className="border rounded p-3 w-full"
+                                    placeholder="State"
+                                    value={formData.state}
+                                    onChange={(e) => handleInputChange('state', e.target.value)}
+                                    required
+                                />
+                                <input
+                                    className="border rounded p-3 w-full"
+                                    placeholder="ZIP code"
+                                    value={formData.zipCode}
+                                    onChange={(e) => handleInputChange('zipCode', e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <input
+                                className="mt-3 border rounded p-3 w-full"
+                                placeholder="Phone"
+                                value={formData.phone}
+                                onChange={(e) => handleInputChange('phone', e.target.value)}
+                            />
 				</div>
 
                         {/* Show loading state initially until payment intent is created */}
@@ -194,7 +345,7 @@ export default function CheckoutPage() {
                         {/* Show Stripe Elements when client secret is available */}
                         {clientSecret && !isLoadingPayment && (
                             <Elements options={options} stripe={stripePromise}>
-                                <CheckoutForm subtotal={subtotal} paymentIntentId={paymentIntentId || ''} onPaymentSuccess={handlePaymentSuccess} />
+                                <CheckoutForm subtotal={subtotal} paymentIntentId={paymentIntentId || ''} onPaymentSuccess={handlePaymentSuccess} isDemoMode={isDemoMode} />
                             </Elements>
                         )}
 

@@ -1,9 +1,10 @@
 /**
- * Firestore Database Service for Scraped Products
- * 
+ * Firestore Database Service for Scraped Products and Orders
+ *
  * Collections Structure:
  * - scrapedProducts/{productId} - Individual scraped products
  * - scrapingJobs/{jobId} - Scraping job history and status
+ * - orders/{orderId} - Customer orders with contact and delivery details
  */
 
 import { db } from '@/lib/firebase';
@@ -520,6 +521,196 @@ export async function getScrapingStats(): Promise<{
         };
     } catch (error) {
         console.error('Error getting scraping stats:', error);
+        throw error;
+    }
+}
+
+// ============================================================================
+// ORDER MANAGEMENT FUNCTIONS
+// ============================================================================
+
+export interface OrderData {
+    id?: string;
+    // Customer Contact Information
+    email: string;
+    firstName: string;
+    lastName: string;
+    phone?: string;
+
+    // Delivery Information
+    address: string;
+    city: string;
+    state: string;
+    zipCode: string;
+
+    // Order Details
+    items: Array<{
+        productId: string;
+        title: string;
+        price: number;
+        quantity: number;
+        imageUrl?: string;
+        sourceUrl?: string;
+    }>;
+    subtotal: number;
+    total: number;
+    shippingFee?: number;
+
+    // Payment Information
+    paymentIntentId: string;
+    paymentStatus: 'pending' | 'authorized' | 'captured' | 'failed' | 'cancelled';
+    authorizedAmount?: number; // Amount authorized (product price only)
+    capturedAmount?: number; // Final amount captured (product + shipping)
+
+    // Order Status
+    orderStatus: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+
+    // Shipping Information
+    trackingNumber?: string;
+    shippingCarrier?: string;
+    shippedAt?: Date;
+    deliveredAt?: Date;
+
+    // Metadata
+    createdAt: Date;
+    updatedAt: Date;
+    newsletterOptIn: boolean;
+}
+
+/**
+ * Create a new order with customer and delivery details
+ */
+export async function createOrder(orderData: Omit<OrderData, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    try {
+        const ordersRef = collection(db, 'orders');
+        const newOrderData = {
+            ...orderData,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            paymentStatus: 'authorized' as const,
+            orderStatus: 'confirmed' as const,
+            authorizedAmount: orderData.authorizedAmount || orderData.subtotal,
+        };
+
+        const docRef = await addDoc(ordersRef, newOrderData);
+
+        console.log(`✅ Order created: ${docRef.id}`);
+        return docRef.id;
+    } catch (error) {
+        console.error('❌ Error creating order:', error);
+        throw error;
+    }
+}
+
+/**
+ * Get order by ID
+ */
+export async function getOrder(orderId: string): Promise<OrderData | null> {
+    try {
+        const orderRef = doc(db, 'orders', orderId);
+        const orderSnap = await getDoc(orderRef);
+
+        if (orderSnap.exists()) {
+            const data = orderSnap.data();
+            return {
+                id: orderSnap.id,
+                ...data,
+                createdAt: data.createdAt.toDate(),
+                updatedAt: data.updatedAt.toDate(),
+            } as OrderData;
+        }
+
+        return null;
+    } catch (error) {
+        console.error('❌ Error getting order:', error);
+        throw error;
+    }
+}
+
+/**
+ * Update order status (legacy function - use updateOrderStatuses instead)
+ */
+export async function updateOrderStatus(orderId: string, status: OrderData['orderStatus']): Promise<void> {
+    try {
+        const orderRef = doc(db, 'orders', orderId);
+        await updateDoc(orderRef, {
+            orderStatus: status,
+            updatedAt: new Date(),
+        });
+
+        console.log(`✅ Order ${orderId} status updated to: ${status}`);
+    } catch (error) {
+        console.error('❌ Error updating order status:', error);
+        throw error;
+    }
+}
+
+/**
+ * Update order statuses (both payment and order status)
+ */
+export async function updateOrderStatuses(
+    orderId: string,
+    updates: {
+        orderStatus?: OrderData['orderStatus'];
+        paymentStatus?: OrderData['paymentStatus'];
+        trackingNumber?: string;
+        shippingCarrier?: string;
+        shippedAt?: Date;
+        deliveredAt?: Date;
+        capturedAmount?: number;
+    }
+): Promise<void> {
+    try {
+        const orderRef = doc(db, 'orders', orderId);
+        const updateData: any = {
+            updatedAt: new Date(),
+        };
+
+        if (updates.orderStatus) updateData.orderStatus = updates.orderStatus;
+        if (updates.paymentStatus) updateData.paymentStatus = updates.paymentStatus;
+        if (updates.trackingNumber) updateData.trackingNumber = updates.trackingNumber;
+        if (updates.shippingCarrier) updateData.shippingCarrier = updates.shippingCarrier;
+        if (updates.shippedAt) updateData.shippedAt = updates.shippedAt;
+        if (updates.deliveredAt) updateData.deliveredAt = updates.deliveredAt;
+        if (updates.capturedAmount) updateData.capturedAmount = updates.capturedAmount;
+
+        await updateDoc(orderRef, updateData);
+
+        console.log(`✅ Order ${orderId} statuses updated:`, updates);
+    } catch (error) {
+        console.error('❌ Error updating order statuses:', error);
+        throw error;
+    }
+}
+
+/**
+ * Get all orders (for admin use)
+ */
+export async function getAllOrders(limitCount = 50): Promise<OrderData[]> {
+    try {
+        const ordersRef = collection(db, 'orders');
+        const q = query(
+            ordersRef,
+            orderBy('createdAt', 'desc'),
+            limit(limitCount)
+        );
+
+        const querySnapshot = await getDocs(q);
+        const orders: OrderData[] = [];
+
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            orders.push({
+                id: doc.id,
+                ...data,
+                createdAt: data.createdAt.toDate(),
+                updatedAt: data.updatedAt.toDate(),
+            } as OrderData);
+        });
+
+        return orders;
+    } catch (error) {
+        console.error('❌ Error getting orders:', error);
         throw error;
     }
 }

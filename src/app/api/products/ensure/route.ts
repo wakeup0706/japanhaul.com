@@ -9,6 +9,8 @@ import {
   getDoc,
   setDoc,
   Timestamp,
+  collection,
+  writeBatch,
 } from 'firebase/firestore';
 
 export const dynamic = 'force-dynamic';
@@ -39,10 +41,48 @@ export async function GET(request: NextRequest) {
     }
 
     if (isDocId) {
-      // If product already exists, no-op
+      // If product already exists, check if it has related subcollection
       const productRef = doc(db, 'scrapedProducts', id);
       const existing = await getDoc(productRef);
       if (existing.exists()) {
+        // Check if related subcollection is empty
+        const relatedRef = collection(db, `scrapedProducts/${id}/related`);
+        const relatedSnap = await getDocs(relatedRef);
+        
+        if (relatedSnap.empty) {
+          // Product exists but has no related items - try to populate them
+          console.log(`Product ${id} exists but has no related items, attempting to populate...`);
+          
+          // Find this product as a related item in other products to get parent's related items
+          let seedSnap = await getDocs(query(collectionGroup(db, 'related'), where('id', '==', id)));
+          
+          // Also try numeric ID if available
+          if (seedSnap.empty && numericId) {
+            seedSnap = await getDocs(query(collectionGroup(db, 'related'), where('id', '==', numericId)));
+          }
+          
+          if (!seedSnap.empty) {
+            // Found this product in someone's related subcollection
+            const parentPath = seedSnap.docs[0].ref.parent.parent;
+            if (parentPath) {
+              const parentRelatedRef = collection(db, `scrapedProducts/${parentPath.id}/related`);
+              const parentRelatedSnap = await getDocs(parentRelatedRef);
+              
+              if (!parentRelatedSnap.empty) {
+                // Copy related items from parent
+                const batch = writeBatch(db);
+                parentRelatedSnap.docs.forEach((relDoc) => {
+                  const relData = relDoc.data();
+                  const newRelRef = doc(db, `scrapedProducts/${id}/related`, relDoc.id);
+                  batch.set(newRelRef, relData, { merge: true });
+                });
+                await batch.commit();
+                console.log(`✅ Populated ${parentRelatedSnap.size} related items for ${id}`);
+              }
+            }
+          }
+        }
+        
         return NextResponse.json({ success: true, ensured: true, existed: true, docId: id });
       }
     }
@@ -113,6 +153,45 @@ export async function GET(request: NextRequest) {
     if (!docId) return NextResponse.json({ error: 'Could not determine product document id' }, { status: 400 });
     const productRef = doc(db, 'scrapedProducts', docId);
     await setDoc(productRef, { ...seed, id: docId }, { merge: true });
+
+    // Copy related subcollection from the parent product (where we found this as a related item)
+    try {
+      // Get the parent document path from the seed snapshot
+      const parentPath = seedSnap.docs[0].ref.parent.parent;
+      if (parentPath) {
+        // Fetch all related items from the parent product
+        const parentRelatedRef = collection(db, `scrapedProducts/${parentPath.id}/related`);
+        const parentRelatedSnap = await getDocs(parentRelatedRef);
+        
+        if (!parentRelatedSnap.empty) {
+          // Copy related items to the new product document in batches
+          const batch = writeBatch(db);
+          let batchCount = 0;
+          
+          parentRelatedSnap.docs.forEach((relDoc) => {
+            const relData = relDoc.data();
+            const newRelRef = doc(db, `scrapedProducts/${docId}/related`, relDoc.id);
+            batch.set(newRelRef, relData, { merge: true });
+            batchCount++;
+            
+            // Firestore batch limit is 500 operations
+            if (batchCount >= 500) {
+              batch.commit();
+              batchCount = 0;
+            }
+          });
+          
+          if (batchCount > 0) {
+            await batch.commit();
+          }
+          
+          console.log(`✅ Copied ${parentRelatedSnap.size} related products to ${docId}`);
+        }
+      }
+    } catch (copyError) {
+      console.error('Failed to copy related products:', copyError);
+      // Don't fail the request if copying related products fails
+    }
 
     // Optionally kick off detail enrichment in background if we have sourceUrl
     if (sourceUrl) {

@@ -26,6 +26,26 @@ export default function ProductsPage() {
     const [isBootstrapping, setIsBootstrapping] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
 
+    // State for popular products
+    const [popularProducts, setPopularProducts] = useState<any[]>([]);
+    const [isLoadingPopular, setIsLoadingPopular] = useState(false);
+
+    // Fetch popular products
+    const fetchPopularProducts = async () => {
+        setIsLoadingPopular(true);
+        try {
+            const response = await fetch('/api/products/popular');
+            if (response.ok) {
+                const data = await response.json();
+                setPopularProducts(data.products);
+            }
+        } catch (error) {
+            console.error('Error fetching popular products:', error);
+        } finally {
+            setIsLoadingPopular(false);
+        }
+    };
+
     // Pass the current language to API requests
     useEffect(() => {
         // Set the document language for API requests
@@ -48,6 +68,9 @@ export default function ProductsPage() {
                 console.log('🎯 Products received in component:', products.length);
                 console.log('🎯 First product:', products[0]);
                 console.log('🎯 Sample product IDs:', products.slice(0, 5).map(p => p.id));
+
+                // Also fetch popular products
+                await fetchPopularProducts();
                 
                 // Check for duplicate IDs and deduplicate
                 const ids = products.map(p => p.id);
@@ -96,6 +119,17 @@ export default function ProductsPage() {
             setIsLoadingMore(false);
         }
     }
+
+    // Calculate display price with 20% markup on scraped products
+    const getDisplayPrice = (product: Product) => {
+        // For scraped products, add 20% markup to the scraped price
+        if (product.sourceUrl && product.sourceUrl.includes('scraped')) {
+            const scrapedPrice = product.price;
+            const markupAmount = scrapedPrice * 0.2;
+            return scrapedPrice + markupAmount;
+        }
+        return product.price;
+    };
 
     const formatPrice = (amount: number) =>
         new Intl.NumberFormat(lang === "ja" ? "ja-JP" : "en-US", {
@@ -221,7 +255,7 @@ export default function ProductsPage() {
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                 {/* Sidebar filters */}
-                <aside className="lg:col-span-3">
+                <aside className="lg:col-span-3 order-2 lg:order-1">
                     <div className="sticky top-28 lg:top-32 max-h-[calc(100vh-9rem)] overflow-auto pr-2 space-y-6 text-[15px]">
                     {/* Availability */}
                     <div>
@@ -329,8 +363,52 @@ export default function ProductsPage() {
                     </div>
                 </aside>
 
+                {/* Popular Products Section */}
+                {popularProducts.length > 0 && (
+                    <div className="lg:col-span-9 mb-8 order-1 lg:order-2">
+                        <div className="bg-gradient-to-r from-orange-50 to-pink-50 border border-orange-200 rounded-lg p-6">
+                            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                🔥 Popular Products
+                                <span className="text-sm font-normal text-gray-600">({popularProducts.length} most purchased)</span>
+                            </h2>
+                            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                                {popularProducts.slice(0, 8).map((product, idx) => (
+                                    <Link key={`popular-${product.productId}-${idx}`} href={`${pathname}/${product.productId}`} className="group block">
+                                        <div className="relative aspect-[4/3] overflow-hidden rounded-lg border bg-white group-hover:shadow-md group-hover:-translate-y-0.5 transition-transform">
+                                            <img
+                                                src={product.imageUrl || "/placeholder.jpg"}
+                                                alt={product.title}
+                                                className="h-full w-full object-cover"
+                                            />
+                                            <div className="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
+                                                #{idx + 1}
+                                            </div>
+                                        </div>
+                                        <div className="mt-2 text-sm">
+                                            <div className="font-medium text-gray-900 truncate">{product.title}</div>
+                                            <div className="text-gray-600">
+                                                Bought {product.purchaseCount} times
+                                            </div>
+                                            <div className="text-green-600 font-semibold">
+                                                ${product.totalRevenue.toFixed(2)} earned
+                                            </div>
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                            {popularProducts.length > 8 && (
+                                <div className="mt-4 text-center">
+                                    <Link href={`${pathname}?sort=popular`} className="text-orange-600 hover:text-orange-700 font-medium">
+                                        View all popular products →
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* Products grid */}
-                <div className="lg:col-span-9">
+                <div className="lg:col-span-9 order-2 lg:order-3">
                     {/* Active filter chips above product grid */}
                     <div className="mb-3 flex flex-wrap items-center gap-2">
                         {Array.from(selectedAvailability).map((v) => (
@@ -455,7 +533,14 @@ export default function ProductsPage() {
                                 <div className="mt-2 text-sm leading-tight">
                                     <div className="font-medium group-hover:underline">{translateProductName(p.title)}</div>
                                     <div className="mt-0.5 flex items-center gap-2">
-                                        <span className={`${p.compareAt ? "text-rose-600 font-semibold" : "text-black font-semibold"}`}>{formatPrice(p.price)}</span>
+                                        <span className={`${p.compareAt ? "text-rose-600 font-semibold" : "text-black font-semibold"}`}>
+                                            {formatPrice(getDisplayPrice(p))}
+                                            {p.sourceUrl && p.sourceUrl.includes('scraped') && (
+                                                <span className="ml-1 text-xs text-gray-500">
+                                                    (+20% markup)
+                                                </span>
+                                            )}
+                                        </span>
                                         {p.compareAt && (
                                             <span className="text-xs text-black line-through">{formatPrice(p.compareAt)}</span>
                                         )}
@@ -522,7 +607,14 @@ export default function ProductsPage() {
                             </div>
                             <div>
                                 <div className="flex items-center gap-2 text-lg">
-                                    <span className="font-semibold text-rose-600">{formatPrice(quickView.price)}</span>
+                                    <span className="font-semibold text-rose-600">
+                                        {formatPrice(getDisplayPrice(quickView))}
+                                        {quickView.sourceUrl && quickView.sourceUrl.includes('scraped') && (
+                                            <span className="ml-1 text-xs text-gray-500">
+                                                (+20% markup)
+                                            </span>
+                                        )}
+                                    </span>
                                     {quickView.compareAt && (
                                         <span className="text-sm text-gray-500 line-through">{formatPrice(quickView.compareAt)}</span>
                                     )}

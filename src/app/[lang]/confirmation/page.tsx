@@ -10,6 +10,7 @@ export default function ConfirmationPage() {
 
 	const [paymentStatus, setPaymentStatus] = useState<'loading' | 'success' | 'failed'>('loading');
 	const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+	const [isDemoMode, setIsDemoMode] = useState(false);
 
 	useEffect(() => {
 		// Check payment status from URL params or local storage
@@ -22,10 +23,13 @@ export default function ConfirmationPage() {
 		} else {
 			// Check if payment was successful
 			const storedPaymentId = localStorage.getItem('payment_intent_id');
+			const demoModeFlag = localStorage.getItem('is_demo_mode');
 			if (storedPaymentId) {
 				setPaymentIntentId(storedPaymentId);
+				setIsDemoMode(demoModeFlag === 'true');
 				setPaymentStatus('success');
 				localStorage.removeItem('payment_intent_id');
+				localStorage.removeItem('is_demo_mode');
 			} else {
 				setPaymentStatus('failed');
 			}
@@ -74,14 +78,21 @@ export default function ConfirmationPage() {
 
 	return (
 		<section className="max-w-3xl mx-auto px-4 py-10 text-center">
-			<h1 className="text-2xl font-semibold mb-2 text-green-600">{t.title}</h1>
-			<p className="text-gray-600 mb-6">{t.sub}</p>
-			<div className="border rounded p-4 text-left mb-6 bg-green-50">
+			<h1 className="text-2xl font-semibold mb-2 text-green-600">
+				{isDemoMode ? 'Demo Payment Confirmed' : t.title}
+			</h1>
+			<p className="text-gray-600 mb-6">
+				{isDemoMode ? 'Demo payment completed successfully!' : t.sub}
+			</p>
+			<div className={`border rounded p-4 text-left mb-6 ${isDemoMode ? 'bg-yellow-50 border-yellow-200' : 'bg-green-50'}`}>
 				<div className="font-semibold mb-2 flex items-center gap-2">
-					<span className="w-2 h-2 bg-green-600 rounded-full"></span>
+					<span className={`w-2 h-2 rounded-full ${isDemoMode ? 'bg-yellow-600' : 'bg-green-600'}`}></span>
 					Order #{paymentIntentId?.slice(-8) || '000123'}
+					{isDemoMode && <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">DEMO</span>}
 				</div>
-				<div className="text-sm text-gray-600">Payment confirmed successfully</div>
+				<div className="text-sm text-gray-600">
+					{isDemoMode ? 'Demo payment completed - no real transaction occurred' : 'Payment confirmed successfully'}
+				</div>
 			</div>
 			<Link href={`/${lang}`} className="inline-block bg-black text-white px-6 py-3 rounded font-semibold">
 				Continue Shopping

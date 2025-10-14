@@ -16,10 +16,26 @@ export async function POST(request: NextRequest) {
   try {
     // Check if Stripe is configured
     if (!stripe) {
-      return NextResponse.json(
-        { error: 'Payment processing not configured. Please add STRIPE_SECRET_KEY to environment variables.' },
-        { status: 503 }
-      );
+      // Return demo payment intent for testing when secret key is missing
+      const { amount } = await request.json();
+
+      if (!amount || amount <= 0) {
+        return NextResponse.json(
+          { error: 'Invalid amount' },
+          { status: 400 }
+        );
+      }
+
+      // Generate a demo client secret (this won't process real payments)
+      const demoClientSecret = `demo_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      const demoPaymentIntentId = `pi_demo_${Date.now()}`;
+
+      return NextResponse.json({
+        clientSecret: demoClientSecret,
+        paymentIntentId: demoPaymentIntentId,
+        demo: true,
+        message: 'Running in demo mode - no real payment processing'
+      });
     }
 
     const { amount, currency = 'usd', metadata = {} } = await request.json();
@@ -31,11 +47,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create a PaymentIntent with the order amount and currency
+    // Create a PaymentIntent with authorization only (no immediate capture)
+    // Product price will be authorized, shipping fees captured later when shipped
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Convert to cents
+      amount: Math.round(amount * 100), // Convert to cents - only product price for now
       currency: currency,
       metadata: metadata,
+      capture_method: 'manual', // Manual capture - authorize now, capture later
       automatic_payment_methods: {
         enabled: true,
       },
