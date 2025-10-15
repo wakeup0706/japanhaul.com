@@ -21,6 +21,7 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
 // Initialize Firestore and get a reference to the service
-export const db = getFirestore(app);
+// Using the ec-anime database where you can modify rules
+export const db = getFirestore(app, 'ec-anime');
 
 export default app;
