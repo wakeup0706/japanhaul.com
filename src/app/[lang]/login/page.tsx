@@ -30,6 +30,8 @@ export default function LoginPage() {
 
         if (message === 'PasswordReset') {
             setMessage({ type: 'success', text: lang === 'ja' ? 'パスワードが正常にリセットされました' : 'Password reset successfully!' });
+        } else if (message) {
+            setMessage({ type: 'error', text: decodeURIComponent(message) });
         } else if (error) {
             setMessage({ type: 'error', text: error });
         }
@@ -66,8 +68,14 @@ export default function LoginPage() {
             const data = await response.json();
 
             if (data.success) {
-                // Redirect to dashboard or home page
-                router.push('/');
+                // Check for redirect parameter
+                const redirectTo = searchParams.get('redirect');
+                if (redirectTo) {
+                    router.push(decodeURIComponent(redirectTo));
+                } else {
+                    // Redirect to dashboard or home page
+                    router.push('/');
+                }
             } else {
                 setMessage({ type: 'error', text: data.error });
             }
@@ -126,8 +134,14 @@ export default function LoginPage() {
             const data = await response.json();
 
             if (data.success) {
-                // Redirect to dashboard or home page
-                router.push('/');
+                // Check for redirect parameter
+                const redirectTo = searchParams.get('redirect');
+                if (redirectTo) {
+                    router.push(decodeURIComponent(redirectTo));
+                } else {
+                    // Redirect to dashboard or home page
+                    router.push('/');
+                }
             } else {
                 setMessage({ type: 'error', text: data.error });
             }

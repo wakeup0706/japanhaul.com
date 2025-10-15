@@ -7,6 +7,8 @@ import { useTranslations } from "next-intl";
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { stripePromise } from '@/lib/stripe';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 // Checkout Form Component that uses Stripe Elements
 function CheckoutForm({ subtotal, paymentIntentId, onPaymentSuccess, isDemoMode }: { subtotal: number; paymentIntentId: string; onPaymentSuccess: () => void; isDemoMode: boolean }) {
@@ -98,6 +100,8 @@ export default function CheckoutPage() {
     const [isLoadingPayment, setIsLoadingPayment] = useState(false);
     const [paymentError, setPaymentError] = useState<string | null>(null);
     const [isDemoMode, setIsDemoMode] = useState(false);
+    const [currentUser, setCurrentUser] = useState<any>(null);
+    const [authChecked, setAuthChecked] = useState(false);
 
     // Form state for contact and delivery details
     const [formData, setFormData] = useState({
@@ -160,6 +164,25 @@ export default function CheckoutPage() {
     useEffect(() => {
         setMounted(true);
 
+        // Check authentication state first
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            setCurrentUser(user);
+            setAuthChecked(true);
+
+            if (!user) {
+                // Redirect to login if not authenticated
+                router.push(`/${lang}/login?message=${encodeURIComponent('Please login to access checkout')}&redirect=${encodeURIComponent(`/${lang}/checkout`)}`);
+                return;
+            }
+        });
+
+        return () => unsubscribe();
+    }, [router, lang]);
+
+    useEffect(() => {
+        // Only create PaymentIntent if user is authenticated and auth check is complete
+        if (!authChecked || !currentUser) return;
+
         // Create PaymentIntent on component mount
         const createPaymentIntent = async () => {
             if (subtotal <= 0) return;
@@ -200,7 +223,7 @@ export default function CheckoutPage() {
         };
 
         createPaymentIntent();
-    }, [subtotal, state.items.length]);
+    }, [subtotal, state.items.length, authChecked, currentUser]);
 
     const itemCount = state.items.reduce((sum, i) => sum + i.quantity, 0);
 
@@ -236,6 +259,35 @@ export default function CheckoutPage() {
         clientSecret,
         appearance,
     } : { clientSecret: '', appearance };
+
+	// Show loading state while checking authentication
+	if (!authChecked) {
+        return (
+            <>
+                {/* Minimal header */}
+                <header className="w-full border-b bg-white">
+                    <div className="mx-auto max-w-7xl px-4 h-16 flex items-center">
+                        <Link href={`/${lang}`} className="text-xl font-semibold tracking-wide">JapanHaul</Link>
+                        <div className="flex-1" />
+                        <Link href={`/${lang}/cart`} aria-label="Cart" className="inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-100">
+                            <span className="text-2xl" role="img" aria-hidden>🛒</span>
+                        </Link>
+                    </div>
+                </header>
+                <div className="min-h-screen flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="animate-spin inline-block w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full mb-4"></div>
+                        <p className="text-gray-600">Checking authentication...</p>
+                    </div>
+                </div>
+            </>
+        );
+    }
+
+    // If not authenticated, don't render checkout content
+    if (!currentUser) {
+        return null; // Will redirect via useEffect
+    }
 
 	return (
         <>

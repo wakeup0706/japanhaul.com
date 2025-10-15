@@ -32,9 +32,35 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(loginUrl);
     }
 
+    // Protect checkout routes (with or without language prefix)
+    if (pathname.endsWith('/checkout') || pathname.match(/^\/[a-z]{2}\/checkout$/)) {
+        console.log('Middleware - protecting checkout route');
+
+        // For protected checkout routes, redirect to appropriate login page
+        // Extract language prefix if present
+        const langMatch = pathname.match(/^\/([a-z]{2})\//);
+        const lang = langMatch ? langMatch[1] : 'en'; // Default to English if no language prefix
+        console.log('Middleware - detected language:', lang);
+
+        // Create login URL with proper language prefix
+        const loginUrl = new URL(`/${lang}/login`, request.url);
+        console.log('Middleware - redirecting to:', loginUrl.toString());
+
+        if (pathname !== `/${lang}/login`) {
+            loginUrl.searchParams.set('redirect', pathname);
+            loginUrl.searchParams.set('message', 'Please login to access checkout');
+        }
+
+        return NextResponse.redirect(loginUrl);
+    }
+
     return NextResponse.next();
 }
 
 export const config = {
-    matcher: ['/admin/:path*'],
+    matcher: [
+        '/admin/:path*',
+        '/:lang/checkout',
+        '/checkout',
+    ],
 };
