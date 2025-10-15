@@ -11,6 +11,8 @@ const nextConfig = {
 			{ protocol: 'https', hostname: 'cdn.shopify.com' },
 			{ protocol: 'https', hostname: 'cdn.amnibus.com' },
 			{ protocol: 'https', hostname: 'images.unsplash.com' },
+			{ protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+			{ protocol: 'http', hostname: 'localhost' },
 		],
 	},
 };
